@@ -1,0 +1,36 @@
+{
+  "name": "gyftr-legal",
+  "version": "1.0.0",
+  "description": "GyfTR Legal Portal — agreement tracking, drafts, reminders, and AI clause analysis built with Vite + Supabase.",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/yashtahlyani/gyftr-legal#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yashtahlyani/gyftr-legal.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yashtahlyani/gyftr-legal/issues"
+  },
+  "keywords": [
+    "legal",
+    "agreements",
+    "vite",
+    "supabase",
+    "portal"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

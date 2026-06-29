@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env.local
+.env
+*.local
+.DS_Store
+
+# Local tooling / editor
+.claude/
+.vscode/
+*.log
