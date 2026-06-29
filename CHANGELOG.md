@@ -11,6 +11,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - MIT `LICENSE`.
 - `CONTRIBUTING.md` with setup and workflow guidelines.
 - GitHub Actions CI workflow that installs dependencies and runs the build.
+- Issue and pull request templates.
+- `SECURITY.md` with a vulnerability-reporting and secret-handling policy.
+
+### Changed
+- All Google credentials (API keys + OAuth client ID) now load from
+  environment variables instead of being hard-coded.
+
+### Security
+- Removed hard-coded credentials from the source and rewrote git history so
+  they no longer appear in any commit.
 
 ## [1.0.0] - 2025-06-19
 
