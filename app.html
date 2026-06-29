@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GyfTR · Legal Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/css/style.css">
+<script async defer src="https://apis.google.com/js/api.js"></script>
+<script async defer src="https://accounts.google.com/gsi/client"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+</head>
+<body>
+<!-- ═══ LOGIN ═══ -->
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <!-- GyFTR SVG logo -->
+      <!-- GYFTR logo: gift-box icon + wordmark -->
+      <svg class="logo-img" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- gift box body -->
+        <rect x="5" y="22" width="34" height="18" rx="2.5" fill="#62A92A"/>
+        <!-- lid -->
+        <rect x="3" y="16" width="38" height="8" rx="2" fill="#4C8A1E"/>
+        <!-- ribbon vertical -->
+        <rect x="19" y="16" width="6" height="24" fill="#fff" opacity=".35"/>
+        <!-- ribbon horizontal on lid -->
+        <rect x="3" y="19" width="38" height="2.5" fill="#fff" opacity=".35"/>
+        <!-- bow left loop -->
+        <ellipse cx="16" cy="13" rx="5.5" ry="4" transform="rotate(-20,16,13)" fill="#4C8A1E" stroke="#fff" stroke-width="1.2"/>
+        <!-- bow right loop -->
+        <ellipse cx="28" cy="13" rx="5.5" ry="4" transform="rotate(20,28,13)" fill="#4C8A1E" stroke="#fff" stroke-width="1.2"/>
+        <!-- bow centre -->
+        <circle cx="22" cy="15" r="3" fill="#62A92A" stroke="#fff" stroke-width="1.5"/>
+      </svg>
+      <div class="logo-text-wrap">
+        <div class="logo-word">Gy<span>FTR</span></div>
+        <div class="logo-sub">Legal Portal</div>
+      </div>
+    </div>
+    <div class="login-card">
+      <div class="login-eyebrow">Workspace</div>
+      <div class="login-title">Sign in to continue</div>
+      <div class="login-sub-txt">Track · Negotiate · Close</div>
+      <div style="display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:600;color:var(--pop-deep);background:var(--pop-soft);padding:3px 9px;border-radius:6px">📋 Draft tracking</span>
+        <span style="font-size:11px;font-weight:600;color:#1D4ED8;background:#EFF6FF;padding:3px 9px;border-radius:6px">🔍 Clause analyser</span>
+        <span style="font-size:11px;font-weight:600;color:#7E22CE;background:#F5F3FF;padding:3px 9px;border-radius:6px">📊 Live dashboard</span>
+        <span style="font-size:11px;font-weight:600;color:#92400E;background:#FFFBEB;padding:3px 9px;border-radius:6px">🔔 Smart reminders</span>
+      </div>
+      <div class="login-field">
+        <label class="login-lbl">Company email</label>
+        <input class="gx-input" type="email" id="loginEmail" value="alex.carter@example.com">
+      </div>
+      <div class="login-field" style="margin-bottom:20px">
+        <label class="login-lbl">Password</label>
+        <input class="gx-input" type="password" id="loginPass" value="">
+      </div>
+      <button class="login-cta" onclick="doLogin()">Sign in &rarr;</button>
+      <div class="login-divider">or sign in as a role</div>
+      <div class="role-grid">
+        <button class="role-pill sel" onclick="pickRole(this,'legal')"><span class="role-name">Alex Carter</span><span class="role-desc">Legal &middot; Full access</span></button>
+        <button class="role-pill" onclick="pickRole(this,'finance')"><span class="role-name">Jordan Lee</span><span class="role-desc">Finance &middot; Review &amp; approve</span></button>
+        <button class="role-pill" onclick="pickRole(this,'business')"><span class="role-name">Sam Rivera</span><span class="role-desc">Business &middot; Review &amp; approve</span></button>
+        <button class="role-pill" onclick="pickRole(this,'compliance')"><span class="role-name">Riley Quinn</span><span class="role-desc">Compliance &middot; Review &amp; approve</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="appShell">
+  <header class="topbar">
+    <div class="tb-left">
+      <svg class="tb-logo-img" viewBox="0 0 28 28" fill="none">
+        <rect x="3" y="14" width="22" height="11" rx="1.5" fill="#62A92A"/>
+        <rect x="2" y="10" width="24" height="5" rx="1.3" fill="#4C8A1E"/>
+        <rect x="12" y="10" width="4" height="15" fill="#fff" opacity=".35"/>
+        <rect x="2" y="11.5" width="24" height="1.5" fill="#fff" opacity=".35"/>
+        <ellipse cx="10" cy="8.5" rx="3.5" ry="2.5" transform="rotate(-18,10,8.5)" fill="#4C8A1E" stroke="#fff" stroke-width=".8"/>
+        <ellipse cx="18" cy="8.5" rx="3.5" ry="2.5" transform="rotate(18,18,8.5)" fill="#4C8A1E" stroke="#fff" stroke-width=".8"/>
+        <circle cx="14" cy="9.5" r="2" fill="#62A92A" stroke="#fff" stroke-width="1"/>
+      </svg>
+      <span class="tb-word">Gy<span>FTR</span></span>
+      <div class="tb-sep"></div>
+      <span class="tb-portal">Legal Portal</span>
+    </div>
+    <div class="tb-right">
+      <div style="text-align:right">
+        <div class="tb-user-name" id="uName">Alex Carter</div>
+        <div class="tb-user-role" id="uRole">Legal Team</div>
+      </div>
+      <div class="tb-avatar-wrap">
+        <div class="tb-avatar" id="uAv">NK</div>
+        <div class="av-tooltip" id="avTooltip">Last login: Today, 09:14 AM</div>
+      </div>
+      <button class="export-btn" onclick="openGlobalSearch()" title="Global search (Cmd+K)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5l4 4" stroke-linecap="round"/></svg>
+        <span>Search</span>
+        <kbd style="font-size:9.5px;background:#E6EFE7;padding:1px 5px;border-radius:4px;color:var(--ink-soft)">⌘K</kbd>
+      </button>
+      <button class="gx-btn" style="background:var(--ink);color:#fff" onclick="openDashboard()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.6"/></svg>
+        Dashboard
+      </button>
+      <button class="gx-btn" style="background:#1D4ED8;color:#fff" onclick="openAnalyse()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 12l4-5 3 3 5-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="4" r="1.5" fill="currentColor"/></svg>
+        Analyse
+      </button>
+      <div id="newWrap">
+        <button class="gx-btn gx-btn-dark" onclick="openCreate()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          New Agreement
+        </button>
+      </div>
+      <button class="gx-btn gx-btn-ghost" onclick="doSignout()">Sign out</button>
+    </div>
+  </header>
+
+  <div id="reminderNotifBar">
+    <div class="rn-inner">
+      <div class="rn-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5a4.5 4.5 0 00-4.5 4.5c0 3.5-1.5 4.5-1.5 4.5h12s-1.5-1-1.5-4.5A4.5 4.5 0 008 1.5zM6.5 13a1.5 1.5 0 003 0" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="rn-body">
+        <div class="rn-title"><span class="rn-title-dot"></span><span id="rnTitle">You have pending reminders from Legal</span><span style="font-size:10px;font-weight:700;background:#DC2626;color:#fff;padding:2px 8px;border-radius:5px;margin-left:4px">Action Required</span></div>
+        <div class="rn-items" id="rnItems"></div>
+      </div>
+      <button class="rn-dismiss" onclick="dismissReminderBar()" title="Dismiss">×</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- STATS -->
+    <div class="stat-row">
+      <div class="stat-card on" onclick="fstat(this,'all')"><div class="stat-lbl">Total</div><div class="stat-num" style="color:var(--ink)" id="s-all">8</div><div class="stat-sub">agreements</div></div>
+      <div class="stat-card" onclick="fstat(this,'pending')"><div class="stat-lbl">Pending</div><div class="stat-num" style="color:#D97706" id="s-pending">2</div><div class="stat-sub">not started</div></div>
+      <div class="stat-card" onclick="fstat(this,'review')"><div class="stat-lbl">Under Review</div><div class="stat-num" style="color:#2D7FF9" id="s-review">3</div><div class="stat-sub">in progress</div></div>
+      <div class="stat-card" onclick="fstat(this,'final')"><div class="stat-lbl">Final Sign</div><div class="stat-num" style="color:#8B5CF6" id="s-final">1</div><div class="stat-sub">awaiting sign</div></div>
+      <div class="stat-card" onclick="fstat(this,'closed')"><div class="stat-lbl">Closed</div><div class="stat-num" style="color:#15803D" id="s-closed">1</div><div class="stat-sub">executed</div></div>
+      <div class="stat-card" onclick="fstat(this,'reopen')"><div class="stat-lbl">Reopened</div><div class="stat-num" style="color:#C42424" id="s-reopen">1</div><div class="stat-sub">in progress</div></div>
+    </div>
+
+    <div class="restrict-bar" id="restrictBar">Viewing as <strong id="restrictRole">Business</strong> &mdash; you can only update your own team row.</div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg class="search-ico" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5l4 4" stroke-linecap="round"/></svg>
+        <input class="filter-inp" type="text" placeholder="Search client…" id="sb" oninput="ftbl()">
+      </div>
+      <select class="filter-sel" id="fSt" onchange="ftbl()">
+        <option value="">Status: All</option>
+        <option value="pending">Pending</option>
+        <option value="review">Under Review</option>
+        <option value="final">Final Sign</option>
+        <option value="closed">Closed</option>
+        <option value="reopen">Reopened</option>
+      </select>
+      <select class="filter-sel" id="fTy" onchange="ftbl()">
+        <option value="">Type: All</option>
+        <option value="API">API / Direct</option>
+        <option value="White Label">White Label</option>
+        <option value="Reseller">Reseller</option>
+        <option value="Enterprise">Enterprise</option>
+      </select>
+      <select class="filter-sel" id="fMs" onchange="ftbl()">
+        <option value="">My Status</option>
+        <option value="Pending">Pending</option>
+        <option value="Under Review">Under Review</option>
+        <option value="Approved">Approved</option>
+      </select>
+      <!-- Team funnel -->
+      <div class="team-filter" id="teamFilterWrap">
+        <button class="team-filter-btn" id="teamFilterBtn" onclick="toggleTeamDD(event)">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Team filter
+        </button>
+        <div class="team-dd" id="teamDD" style="display:none">
+          <div class="team-dd-lbl">Show teams</div>
+          <div class="team-opt" onclick="toggleTeamOpt('L',this)"><div class="t-cb on" id="tcb-L">✓</div><span class="team-opt-name">Legal</span></div>
+          <div class="team-opt" onclick="toggleTeamOpt('F',this)"><div class="t-cb on" id="tcb-F">✓</div><span class="team-opt-name">Finance</span></div>
+          <div class="team-opt" onclick="toggleTeamOpt('C',this)"><div class="t-cb on" id="tcb-C">✓</div><span class="team-opt-name">Compliance</span></div>
+          <div class="team-opt" onclick="toggleTeamOpt('B',this)"><div class="t-cb on" id="tcb-B">✓</div><span class="team-opt-name">Business</span></div>
+          <div style="border-top:1px solid var(--line);margin:8px 0 6px"></div>
+          <div class="team-dd-lbl" style="margin-bottom:5px">Filter by team status</div>
+          <select class="filter-sel" id="fTeamSt" onchange="ftbl()" style="width:100%;font-size:12px;padding:6px 22px 6px 8px">
+            <option value="">Any team status</option>
+            <option value="Approved">Approved</option>
+            <option value="Under Review">Under Review</option>
+            <option value="Pending">Pending</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+      <span class="filter-count" id="rcount">8 of 8</span>
+      <button class="export-btn" onclick="openExport()" style="margin-left:4px">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M5 8l3 3 3-3M2 13h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export
+      </button>
+      <button class="export-btn" onclick="printTable()" title="Print table (Ctrl+P)">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 6V2h8v4M4 10H2V6h12v4h-2M4 10v4h8v-4H4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        Print
+      </button>
+    </div>
+
+    <!-- TABLE -->
+    <div class="content">
+      <div class="table-panel" id="tblWrap">
+        <div class="table-scroll">
+          <table id="agTable">
+            <thead><tr>
+              <th class="gx-th" style="min-width:160px">Client</th>
+              <th class="gx-th" style="min-width:110px">Client Status</th>
+              <th class="gx-th" style="min-width:110px">Status</th>
+              <th class="gx-th" style="width:108px">My Status</th>
+              <th class="gx-th" style="min-width:160px">Team Review</th>
+              <th class="gx-th" style="min-width:130px">Remarks</th>
+              <th class="gx-th" style="width:96px">Drafts / Log</th>
+              <th class="gx-th" style="width:56px">Doc</th>
+            </tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DOC FULL SCREEN ═══ -->
+<div id="docScreen">
+  <div class="doc-topbar">
+    <button class="doc-back" onclick="closeDoc()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back to list
+    </button>
+    <div class="tb-sep"></div>
+    <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+        <rect x="3" y="14" width="22" height="11" rx="1.5" fill="#62A92A"/>
+        <rect x="2" y="10" width="24" height="5" rx="1.3" fill="#4C8A1E"/>
+        <rect x="12" y="10" width="4" height="15" fill="#fff" opacity=".35"/>
+        <rect x="2" y="11.5" width="24" height="1.5" fill="#fff" opacity=".35"/>
+        <ellipse cx="10" cy="8.5" rx="3.5" ry="2.5" transform="rotate(-18,10,8.5)" fill="#4C8A1E" stroke="#fff" stroke-width=".8"/>
+        <ellipse cx="18" cy="8.5" rx="3.5" ry="2.5" transform="rotate(18,18,8.5)" fill="#4C8A1E" stroke="#fff" stroke-width=".8"/>
+        <circle cx="14" cy="9.5" r="2" fill="#62A92A" stroke="#fff" stroke-width="1"/>
+      </svg>
+    <span class="doc-client-name" id="docClientName">—</span>
+    <span class="doc-type-tag" id="docTypeTag">—</span>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center" id="docStatusArea"></div>
+  </div>
+  <div class="doc-body">
+    <!-- LEFT: agreement details -->
+    <div class="doc-info" id="docInfoPanel"></div>
+    <!-- RIGHT: Google Doc iframe -->
+    <div class="doc-frame-wrap">
+      <div class="doc-frame-bar">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#94a59b" stroke-width="1.5"/><path d="M11 2v4h3" stroke="#94a59b" stroke-width="1.5"/></svg>
+        <span class="doc-frame-url" id="docFrameUrl">—</span>
+        <button id="saveDocBtn" onclick="window.gSaveCopyToDrive&&window.gSaveCopyToDrive()" style="margin-left:auto;background:#1a73e8;color:#fff;border:none;border-radius:7px;padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-family:inherit;flex-shrink:0">Save to Drive</button>
+        <a id="docOpenLink" href="#" target="_blank" style="font-size:11.5px;font-weight:700;color:var(--pop-deep);text-decoration:none;padding:5px 12px;background:var(--pop-soft);border-radius:7px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;flex-shrink:0">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M10 2h4v4M14 2l-7 7M7 4H3a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Open in Drive
+        </a>
+      </div>
+      <div class="doc-work-area" id="docWorkArea">
+        <iframe id="docIframe" src="about:blank" style="flex:1;border:none;min-height:0;min-width:0" allow="clipboard-read; clipboard-write" allowfullscreen></iframe>
+      </div>
+      <!-- Sign bar — shown only for legal & business roles -->
+      <div class="sign-bar" id="signBar" style="display:none">
+        <div class="sign-bar-left">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 12c1.5-1 3-2 4.5-1S9 13 10.5 12s3-2 3.5-1" stroke="#586860" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M3 10l2-5 2 3 2-6 2 4 1.5-2" stroke="#62A92A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div>
+            <div id="signBarTitle" style="font-size:13px;font-weight:700;color:var(--ink)">Ready to sign this agreement?</div>
+            <div id="signBarSub" style="font-size:11.5px;color:var(--ink-soft);margin-top:1px">Review the document carefully before signing.</div>
+          </div>
+        </div>
+        <div id="signBarAction"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SIGN CONFIRM MODAL ═══ -->
+<div class="overlay" id="signModal">
+  <div class="modal" style="width:420px">
+    <div class="m-hdr">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--pop-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+            <path d="M2 12c1.5-1 3-2 4.5-1S9 13 10.5 12s3-2 3.5-1" stroke="var(--pop-deep)" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M3 10l2-5 2 3 2-6 2 4 1.5-2" stroke="var(--pop)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="m-title">Sign Agreement</span>
+      </div>
+      <button class="m-close" onclick="closeSignModal()">&times;</button>
+    </div>
+    <div class="m-body">
+      <div style="background:var(--pop-soft);border:1px solid rgba(98,170,42,.25);border-radius:10px;padding:12px 14px;margin-bottom:18px">
+        <div style="font-size:12px;font-weight:700;color:var(--pop-deep);margin-bottom:3px">You are about to sign</div>
+        <div style="font-size:14px;font-weight:700;color:var(--ink)" id="signDocName">—</div>
+        <div style="font-size:12px;color:var(--ink-soft);margin-top:2px" id="signDocType">—</div>
+      </div>
+      <div class="mf">
+        <label class="mfl">Full name <span style="color:#C42424">*</span></label>
+        <input class="gx-input" type="text" id="signName" placeholder="Type your full name to confirm">
+      </div>
+      <div class="mf">
+        <label class="mfl">Designation</label>
+        <input class="gx-input" type="text" id="signDesig" placeholder="e.g. Legal Head, Business VP…">
+      </div>
+      <div style="background:#FFF8E1;border:1px solid #FFD54F;border-radius:9px;padding:10px 13px;font-size:12px;color:#5D4037;line-height:1.5">
+        <strong>By clicking "Confirm &amp; Sign"</strong> you confirm that you have read and agree to the terms of this agreement. This action will be recorded with your name, role, and timestamp.
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="gx-btn gx-btn-ghost" onclick="closeSignModal()">Cancel</button>
+      <button class="gx-btn gx-btn-dark" onclick="confirmSign()" id="signConfirmBtn" style="background:#15803D">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Confirm &amp; Sign
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CREATE MODAL ═══ -->
+<div class="overlay" id="createModal">
+  <div class="modal">
+    <div class="m-hdr"><span class="m-title">New Agreement</span><button class="m-close" onclick="closeCr()">&times;</button></div>
+    <div class="m-body">
+      <div class="mf"><label class="mfl">Client Name <span style="color:#C42424">*</span></label><input class="gx-input" type="text" id="fc" placeholder="e.g. Summit Life Insurance Ltd."></div>
+      <div class="m2">
+        <div class="mf"><label class="mfl">Agreement Type <span style="color:#C42424">*</span></label><select class="gx-input" id="fty"><option value="">Select…</option><option>API / Direct</option><option>White Label</option><option>Reseller</option><option>Enterprise</option><option>B2B Marketplace</option></select></div>
+        <div class="mf"><label class="mfl">Promise Date <span style="color:#94a59b;font-weight:500">(opt.)</span></label><input class="gx-input" type="date" id="fpd"></div>
+      </div>
+      <div class="m2">
+        <div class="mf"><label class="mfl">Business SPOC <span style="color:#C42424">*</span></label><select class="gx-input" id="fb"><option value="">Select…</option><option>Sam</option><option>Taylor</option></select></div>
+        <div class="mf"><label class="mfl">Legal SPOC <span style="color:#C42424">*</span></label><select class="gx-input" id="fleg"><option value="">Select…</option><option>Alex</option></select></div>
+      </div>
+      <div class="m2">
+        <div class="mf"><label class="mfl">Finance SPOC <span style="color:#C42424">*</span></label><select class="gx-input" id="ffin"><option value="">Select…</option><option>Jordan</option></select></div>
+        <div class="mf"><label class="mfl">Compliance SPOC <span style="color:#C42424">*</span></label><select class="gx-input" id="fcom"><option value="">Select…</option><option>Alex</option></select></div>
+      </div>
+      <div class="mf"><label class="mfl">Google Doc Link <span style="color:#94a59b;font-weight:500">(opt.)</span></label><input class="gx-input" type="url" id="fdoc" placeholder="https://docs.google.com/…"></div>
+    </div>
+    <div class="m-foot"><button class="gx-btn gx-btn-ghost" onclick="closeCr()">Cancel</button><button class="gx-btn gx-btn-dark" onclick="submitCr()">Create Agreement</button></div>
+  </div>
+</div>
+
+<!-- ═══ HISTORY MODAL ═══ -->
+<div class="overlay" id="histModal">
+  <div class="hist-modal">
+    <div class="m-hdr" style="flex-shrink:0">
+      <span class="m-title" id="histTitle">Status History</span>
+      <button class="m-close" onclick="closeHist()">&times;</button>
+    </div>
+    <!-- filter bar -->
+    <div class="modal-filter-bar" id="histFilterBar">
+      <div class="modal-search-wrap">
+        <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#94a59b;pointer-events:none" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5l4 4" stroke-linecap="round"/></svg>
+        <input class="modal-search-inp" type="text" placeholder="Search by team or person…" id="histSearch" oninput="filterHist()">
+      </div>
+      <select class="modal-filter-sel" id="histTeamFilter" onchange="filterHist()">
+        <option value="">All teams</option>
+        <option value="Legal">Legal</option>
+        <option value="Finance">Finance</option>
+        <option value="Compliance">Compliance</option>
+        <option value="Business">Business</option>
+      </select>
+      <select class="modal-filter-sel" id="histChangeFilter" onchange="filterHist()">
+        <option value="">All changes</option>
+        <option value="Approved">→ Approved</option>
+        <option value="Under Review">→ Under Review</option>
+        <option value="Pending">→ Pending</option>
+        <option value="Rejected">→ Rejected</option>
+        <option value="Signed">→ Signed</option>
+      </select>
+      <span class="modal-filter-count" id="histCount"></span>
+    </div>
+    <div style="overflow:auto;flex:1">
+      <table class="ht">
+        <thead><tr>
+          <th>Team</th>
+          <th>By</th>
+          <th>Old Date &amp; Time</th>
+          <th>New Date &amp; Time</th>
+          <th>Change</th>
+          <th>Time Taken</th>
+        </tr></thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ REMARKS MODAL ═══ -->
+<div class="overlay" id="remModal">
+  <div class="rem-modal">
+    <div class="m-hdr" style="flex-shrink:0">
+      <span class="m-title" id="remTitle">Remarks</span>
+      <button class="m-close" onclick="closeRem()">&times;</button>
+    </div>
+    <!-- filter bar -->
+    <div class="modal-filter-bar" id="remFilterBar">
+      <div class="modal-search-wrap">
+        <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#94a59b;pointer-events:none" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5l4 4" stroke-linecap="round"/></svg>
+        <input class="modal-search-inp" type="text" placeholder="Search remarks…" id="remSearch" oninput="filterRem()">
+      </div>
+      <select class="modal-filter-sel" id="remRoleFilter" onchange="filterRem()">
+        <option value="">All roles</option>
+        <option value="Legal">Legal</option>
+        <option value="Finance">Finance</option>
+        <option value="Compliance">Compliance</option>
+        <option value="Business">Business</option>
+      </select>
+      <span class="modal-filter-count" id="remCount"></span>
+    </div>
+    <div class="rem-list" id="remList"></div>
+    <div class="rem-add-area">
+      <textarea class="rem-textarea" rows="2" id="remInput" placeholder="Add a remark… (Enter to post)"></textarea>
+      <button class="gx-btn gx-btn-dark" onclick="submitRem()" style="align-self:flex-end;padding:8px 13px">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Post
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CLIENT DETAIL SCREEN ═══ -->
+<div id="clientScreen">
+  <div class="cs-topbar">
+    <button class="doc-back" onclick="closeClientScreen()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back to list
+    </button>
+    <div class="tb-sep"></div>
+    <svg width="22" height="22" viewBox="0 0 28 28" fill="none"><rect x="3" y="14" width="22" height="11" rx="1.5" fill="#62A92A"/><rect x="2" y="10" width="24" height="5" rx="1.3" fill="#4C8A1E"/><rect x="12" y="10" width="4" height="15" fill="#fff" opacity=".35"/><rect x="2" y="11.5" width="24" height="1.5" fill="#fff" opacity=".35"/><ellipse cx="10" cy="8.5" rx="3.5" ry="2.5" transform="rotate(-18,10,8.5)" fill="#4C8A1E" stroke="#fff" stroke-width=".8"/><ellipse cx="18" cy="8.5" rx="3.5" ry="2.5" transform="rotate(18,18,8.5)" fill="#4C8A1E" stroke="#fff" stroke-width=".8"/><circle cx="14" cy="9.5" r="2" fill="#62A92A" stroke="#fff" stroke-width="1"/></svg>
+    <span class="doc-client-name" id="csClientName">—</span>
+    <span class="doc-type-tag" id="csTypeTag">—</span>
+    <div style="margin-left:auto">
+      <button class="cs-save-btn" onclick="saveClientDates()">Save changes</button>
+    </div>
+  </div>
+  <div class="cs-body" id="csBody"></div>
+</div>
+
+<!-- ═══ DASHBOARD SCREEN ═══ -->
+<div id="dashScreen">
+  <div class="dash-topbar">
+    <button class="doc-back" onclick="closeDashboard()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back to list
+    </button>
+    <div class="tb-sep"></div>
+    <svg width="20" height="20" viewBox="0 0 28 28" fill="none"><rect x="3" y="14" width="22" height="11" rx="1.5" fill="#62A92A"/><rect x="2" y="10" width="24" height="5" rx="1.3" fill="#4C8A1E"/><rect x="12" y="10" width="4" height="15" fill="#fff" opacity=".35"/><ellipse cx="10" cy="8.5" rx="3.5" ry="2.5" transform="rotate(-18,10,8.5)" fill="#4C8A1E" stroke="#fff" stroke-width=".8"/><ellipse cx="18" cy="8.5" rx="3.5" ry="2.5" transform="rotate(18,18,8.5)" fill="#4C8A1E" stroke="#fff" stroke-width=".8"/><circle cx="14" cy="9.5" r="2" fill="#62A92A" stroke="#fff" stroke-width="1"/></svg>
+    <span style="font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--ink)">Legal Command Centre</span>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="export-btn" onclick="openExport()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M5 8l3 3 3-3M2 13h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export Report
+      </button>
+    </div>
+  </div>
+  <div class="dash-body" id="dashBody"></div>
+</div>
+
+<!-- ═══ ANALYSE SCREEN ═══ -->
+<div id="analyseScreen">
+  <!-- topbar -->
+  <div class="an-topbar">
+    <button class="doc-back" onclick="closeAnalyse()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Exit Analyser
+    </button>
+    <div class="tb-sep"></div>
+    <svg width="20" height="20" viewBox="0 0 28 28" fill="none"><rect x="3" y="14" width="22" height="11" rx="1.5" fill="#62A92A"/><rect x="2" y="10" width="24" height="5" rx="1.3" fill="#4C8A1E"/><rect x="12" y="10" width="4" height="15" fill="#fff" opacity=".35"/><ellipse cx="10" cy="8.5" rx="3.5" ry="2.5" transform="rotate(-18,10,8.5)" fill="#4C8A1E" stroke="#fff" stroke-width=".8"/><ellipse cx="18" cy="8.5" rx="3.5" ry="2.5" transform="rotate(18,18,8.5)" fill="#4C8A1E" stroke="#fff" stroke-width=".8"/><circle cx="14" cy="9.5" r="2" fill="#62A92A" stroke="#fff" stroke-width="1"/></svg>
+    <span style="font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--ink)">Clause Analyser</span>
+    <span style="font-size:12px;color:var(--ink-soft);margin-left:4px">AI-powered draft comparison</span>
+  </div>
+
+  <!-- STEP 1: full-width agreement picker cards -->
+  <div id="anPickerStep">
+    <div class="an-picker-hdr">
+      <div class="an-picker-title">Select an Agreement to Analyse</div>
+      <div class="an-picker-sub">Choose which agreement's draft negotiations you want to explore clause by clause</div>
+      <div class="an-picker-filters">
+        <div style="position:relative">
+          <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a59b;pointer-events:none" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5l4 4" stroke-linecap="round"/></svg>
+          <input class="an-picker-search" type="text" placeholder="Search client…" id="anSearch" oninput="filterAnList()">
+        </div>
+        <select class="an-picker-sel" id="anTypeFilter" onchange="filterAnList()">
+          <option value="">All types</option>
+          <option value="API">API / Direct</option>
+          <option value="White Label">White Label</option>
+          <option value="Reseller">Reseller</option>
+          <option value="Enterprise">Enterprise</option>
+        </select>
+        <select class="an-picker-sel" id="anStatusFilter" onchange="filterAnList()">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="review">Under Review</option>
+          <option value="final">Final Sign</option>
+          <option value="reopen">Reopened</option>
+        </select>
+        <span style="font-size:12px;color:var(--ink-soft);font-weight:600" id="anPickerCount"></span>
+      </div>
+    </div>
+    <div class="an-card-grid" id="anCardGrid"></div>
+  </div>
+
+  <!-- STEP 2: full-width matrix (no sidebar) -->
+  <div id="anMatrixStep">
+    <div class="an-matrix-topbar">
+      <button class="an-back-btn" onclick="anGoBack()">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        All agreements
+      </button>
+      <div class="tb-sep"></div>
+      <span class="an-matrix-client" id="anMatrixClientName">—</span>
+      <span id="anMatrixTypeBadge" style="font-size:11px;font-weight:700;color:var(--ink-soft);background:#EEF4EF;padding:3px 9px;border-radius:6px"></span>
+      <div class="an-tab-row">
+        <button class="an-tab on" id="anTabMatrix" onclick="anSetMode('matrix')">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+          Full Matrix
+        </button>
+        <button class="an-tab" id="anTabCompare" onclick="anSetMode('compare')">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 2v12M12 2v12M1 8h14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Compare Drafts
+        </button>
+        <button class="an-tab an-tab-ai" id="anTabAI" onclick="anSetMode('ai')">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3.5L13 7l-3.5 1.5L8 12l-1.5-3.5L3 7l3.5-1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          AI Analysis
+        </button>
+      </div>
+    </div>
+    <!-- main content (summary + filter + matrix) injected by JS -->
+    <div id="anMain" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0"></div>
+  </div>
+</div>
+
+
+<!-- ═══ DRAFTS MODAL (centred overlay) ═══ -->
+<div class="overlay" id="draftsModal">
+  <div class="modal" style="width:560px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden">
+    <div class="m-hdr" style="flex-shrink:0">
+      <div>
+        <div class="m-title" id="dpTitle">Drafts</div>
+        <div style="font-size:11.5px;color:var(--ink-soft);margin-top:3px" id="dpSubTitle"></div>
+      </div>
+      <button class="m-close" onclick="closeDraftsModal()">&times;</button>
+    </div>
+    <!-- timeline list -->
+    <div style="flex:1;overflow-y:auto;padding:16px 20px" id="dpList"></div>
+    <!-- add draft — legal only -->
+    <div id="dpAddWrap" style="display:none;padding:12px 20px;border-top:1px solid var(--line);background:#FAFCFA">
+      <div style="font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Add Draft</div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px">Date</div>
+          <input class="gx-input" type="date" id="dpNewDate" style="padding:7px 10px;font-size:13px">
+        </div>
+        <div style="flex:2">
+          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px">Note</div>
+          <input class="gx-input" type="text" id="dpNewNote" placeholder="What changed in this draft…" style="padding:7px 10px;font-size:13px">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px">Direction</div>
+          <select class="gx-input" id="dpNewDir" style="padding:7px 10px;font-size:13px;width:auto">
+            <option value="sent">↗ Sent</option>
+            <option value="received">↙ Received</option>
+          </select>
+        </div>
+        <button class="gx-btn gx-btn-dark" style="flex-shrink:0;padding:8px 16px" onclick="addDraft()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GLOBAL SEARCH ═══ -->
+<div id="globalSearchOverlay" onclick="if(event.target===this)closeGlobalSearch()">
+  <div class="gs-box">
+    <div class="gs-inp-wrap">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#94a59b" stroke-width="1.6"><circle cx="6.5" cy="6.5" r="5"/><path d="M10.5 10.5l4 4" stroke-linecap="round"/></svg>
+      <input class="gs-inp" type="text" id="gsInput" placeholder="Search agreements, clauses, remarks…" oninput="runGlobalSearch(this.value)">
+      <span class="gs-kbd">ESC to close</span>
+    </div>
+    <div class="gs-results" id="gsResults">
+      <div class="gs-empty" style="padding:28px">
+        <div style="font-size:22px;margin-bottom:8px">🔍</div>
+        Start typing to search across all agreements, clauses and remarks
+      </div>
+    </div>
+    <div class="gs-footer">
+      <span class="gs-hint"><kbd>↑↓</kbd> Navigate</span>
+      <span class="gs-hint"><kbd>↵</kbd> Open</span>
+      <span class="gs-hint"><kbd>ESC</kbd> Close</span>
+      <span style="margin-left:auto;font-size:11px;font-weight:600;color:#94a59b" id="gsResultCount"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EXPORT MODAL ═══ -->
+<div class="overlay" id="exportModal">
+  <div class="modal" style="width:420px">
+    <div class="m-hdr">
+      <div>
+        <div class="m-title">Export Report</div>
+        <div style="font-size:12px;color:var(--ink-soft);margin-top:3px">Download agreement data as a formatted report</div>
+      </div>
+      <button class="m-close" onclick="closeExport()">&times;</button>
+    </div>
+    <div class="m-body">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div id="exportOptAll" class="export-opt sel" onclick="selectExportOpt(this,'all')" style="padding:12px 14px;border:1.5px solid var(--pop);background:var(--pop-soft);border-radius:11px;cursor:pointer;transition:all .12s">
+          <div style="font-size:13px;font-weight:700;color:var(--ink)">All Agreements</div>
+          <div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px">Full list with status, team review and remarks</div>
+        </div>
+        <div id="exportOptStuck" class="export-opt" onclick="selectExportOpt(this,'stuck')" style="padding:12px 14px;border:1.5px solid var(--line);border-radius:11px;cursor:pointer;transition:all .12s">
+          <div style="font-size:13px;font-weight:700;color:var(--ink)">Bottleneck Report</div>
+          <div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px">Only stuck/overdue agreements with aging details</div>
+        </div>
+        <div id="exportOptPending" class="export-opt" onclick="selectExportOpt(this,'pending')" style="padding:12px 14px;border:1.5px solid var(--line);border-radius:11px;cursor:pointer;transition:all .12s">
+          <div style="font-size:13px;font-weight:700;color:var(--ink)">Open Clauses Report</div>
+          <div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px">All unresolved clauses across agreements</div>
+        </div>
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="gx-btn gx-btn-ghost" onclick="closeExport()">Cancel</button>
+      <button class="gx-btn gx-btn-dark" onclick="doExport()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M5 8l3 3 3-3M2 13h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download HTML Report
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════ DATA ════════ */
+const ROLES={
+  legal:  {name:"Alex Carter", role:"Legal Team",      av:"AC", team:"L", canCreate:true},
+  finance:{name:"Jordan Lee",role:"Finance Team",    av:"JL", team:"F", canCreate:false},
+  business:{name:"Sam Rivera",role:"Business Team",  av:"SR", team:"B", canCreate:false},
+  compliance:{name:"Riley Quinn",role:"Compliance Team",av:"RQ",team:"C",canCreate:false}
+};
+
+// teamAging: days each team has been in current status (for display)
+const AGs=[
+  {id:1,client:"Summit Life Insurance",tag:"SLI",ct:"ct-b",sD:"2026-05-12",type:"API / Direct",st:"review",clientStatus:"responded",
+   tm:{L:"tc-green",F:"tc-yellow",C:"tc-none",B:"tc-green"},
+   ms:{L:"Approved",F:"Under Review",C:"Pending",B:"Approved"},
+   teamAging:{L:null,F:"+3d",C:null,B:null},
+   ag:"+3d",ac:"ag-warn",lu:"2026-06-05",
+   remarks:[
+     {author:"Alex Carter",role:"Legal",ts:"2026-06-01 09:00",txt:"Draft shared with finance team for review."},
+     {author:"Jordan Lee",role:"Finance",ts:"2026-06-05 14:22",txt:"Awaiting clarification on revenue share clause."}
+   ],
+   doc:"https://docs.google.com/document/d/19GynpWHuPzVZqyQXCIcRkkXCl4Zaji0P/edit",
+   sp:{B:"Sam",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-06-10",
+   hist:[
+     {d:"2026-05-12 11:30",t:"Legal",b:"Alex",f:"—",to:"Pending"},
+     {d:"2026-06-01 09:00",t:"Legal",b:"Alex",f:"Pending",to:"Approved"},
+     {d:"2026-06-03 10:05",t:"Business",b:"Sam",f:"Pending",to:"Approved"},
+     {d:"2026-06-05 14:22",t:"Finance",b:"Jordan",f:"Pending",to:"Under Review"}
+   ],
+   clientDates:{draftStart:"2026-05-12",latestModified:"2026-06-04",effectiveDate:"2026-07-01",signingDate:"",endDate:"2027-05-11"},
+   drafts:[
+     {n:"D1",date:"2026-05-14",dir:"sent",note:"Initial draft sent to client"},
+     {n:"D2",date:"2026-05-22",dir:"received",note:"Client returned with 8 changes on Cl.4,7,11"},
+     {n:"D3",date:"2026-05-30",dir:"sent",note:"Revised draft — accepted 6 of 8 changes"},
+     {n:"D4",date:"2026-06-04",dir:"received",note:"Minor edits on revenue clause only"}
+   ],
+   clauses:[
+     {no:"2",name:"Scope of Services",outcome:"accepted",
+      full:"The service provider shall provide API access to the gift voucher platform including redemption, issuance and balance enquiry modules. Client requested addition of sub-clause 2.3 restricting data usage to internal analytics only.",
+      changes:["GyfTR to provide API integration for gift voucher issuance and redemption.","Client added Cl.2.3: data generated via API shall not be used for third-party marketing.","Accepted. Cl.2.3 incorporated as drafted by client.","No further change."]},
+     {no:"3",name:"Payment Terms",outcome:"partial",
+      full:"Invoices shall be raised on the 1st of each month. Payment cycle initially set at 30 days from invoice date; client negotiated extension to 45 days citing internal finance processes.",
+      changes:["Payment due within 30 days of invoice date.","Client requested payment cycle extended to 45 days.","Agreed — payment cycle revised to 45 days from invoice date.","No further change."]},
+     {no:"4",name:"Revenue Share",outcome:"partial",
+      full:"Revenue share model based on net GMV processed through the platform. Initial proposal 18%; client counter-proposed 15% citing volume commitments; settled at 17% with quarterly review clause.",
+      changes:["GyfTR revenue share: 18% of net GMV.","Client counter-proposed 15% with volume commitment of ₹5Cr/month.","GyfTR counter at 17% — accepted if volume commitment is ₹3Cr/month.","Client accepted 17% with ₹3Cr/month commitment. Final."]},
+     {no:"6",name:"Confidentiality",outcome:"accepted",
+      full:"Both parties shall maintain confidentiality of proprietary information. Client proposed extending post-termination confidentiality obligation from 1 year (standard) to 3 years given sensitive customer data involved.",
+      changes:["Confidentiality obligation: 1 year post termination.","Client proposed 3-year post-term obligation citing sensitivity of customer data.","GyfTR accepted 3-year obligation.","No further change."]},
+     {no:"7",name:"Liability Cap",outcome:"held",
+      full:"Liability cap protects both parties from unbounded exposure. Client attempted to remove cap entirely in D2; GyfTR reinstated cap at 2× annual fees paid, which client accepted in D4.",
+      changes:["Liability of either party capped at total fees paid in preceding 12 months.","Client removed liability cap entirely — 'unlimited liability' proposed.","GyfTR reinstated cap at 2× annual fees paid. Non-negotiable.","Client accepted liability cap at 2× annual fees."]},
+     {no:"8",name:"Term & Termination",outcome:"accepted",
+      full:"Agreement term and renewal mechanism. Client proposed extension from 12 to 24 months to align with their internal planning cycle. Termination notice period also discussed.",
+      changes:["Initial term: 12 months with auto-renewal on 30-day notice.","Client proposed 24-month initial term with 60-day termination notice.","GyfTR accepted 24-month term; termination notice retained at 30 days.","No further change."]},
+     {no:"9",name:"Dispute Resolution",outcome:"accepted",
+      full:"Disputes to be resolved through arbitration under ICADR rules, seated in Delhi. Clause was absent in D1 and D2; added by GyfTR legal in D3 following internal compliance review.",
+      changes:["[No dispute resolution clause in initial draft]","[Not addressed by client]","GyfTR added Cl.9: disputes via ICADR arbitration, seat Delhi, English language.","Client accepted without modification."]}
+   ]},
+  {id:2,client:"Caldera Health",tag:"CLD",ct:"ct-t",sD:"2026-05-20",type:"White Label",st:"pending",clientStatus:"awaiting",
+   tm:{L:"tc-yellow",F:"tc-none",C:"tc-none",B:"tc-none"},
+   ms:{L:"Under Review",F:"Pending",C:"Pending",B:"Pending"},
+   teamAging:{L:"+1d",F:null,C:null,B:null},
+   ag:"On time",ac:"ag-ok",lu:"2026-05-22",
+   remarks:[{author:"Alex Carter",role:"Legal",ts:"2026-05-22 09:15",txt:"Draft sent for review."}],
+   doc:"https://docs.google.com/document/d/17-mhtub5pwUDQT__kfNI8e1Liy5Ox9WA/edit",
+   sp:{B:"Taylor",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-06-20",
+   hist:[
+     {d:"2026-05-20 10:00",t:"Legal",b:"Alex",f:"—",to:"Pending"},
+     {d:"2026-05-22 09:15",t:"Legal",b:"Alex",f:"Pending",to:"Under Review"}
+   ]},
+  {id:3,client:"Crestview Bank",tag:"CVB",ct:"ct-g",sD:"2026-04-15",type:"API / Direct",st:"final",clientStatus:"finalised",
+   tm:{L:"tc-green",F:"tc-green",C:"tc-green",B:"tc-green"},
+   ms:{L:"Approved",F:"Approved",C:"Approved",B:"Approved"},
+   teamAging:{L:null,F:null,C:null,B:null},
+   ag:"On time",ac:"ag-ok",lu:"2026-06-08",
+   remarks:[{author:"Alex Carter",role:"Legal",ts:"2026-06-08 16:00",txt:"All teams approved. Sent to CEO for final signature."}],
+   doc:"https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit",
+   sp:{B:"Sam",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-06-15",
+   hist:[
+     {d:"2026-04-15 11:00",t:"Legal",b:"Alex",f:"—",to:"Pending"},
+     {d:"2026-05-28 09:00",t:"Legal",b:"Alex",f:"Pending",to:"Approved"},
+     {d:"2026-05-30 10:00",t:"Business",b:"Sam",f:"Pending",to:"Approved"},
+     {d:"2026-06-05 11:00",t:"Finance",b:"Jordan",f:"Under Review",to:"Approved"},
+     {d:"2026-06-08 16:00",t:"Compliance",b:"Riley",f:"Under Review",to:"Approved"}
+   ],
+   clientDates:{draftStart:"2026-04-15",latestModified:"2026-06-08",effectiveDate:"2026-07-01",signingDate:"2026-06-10",endDate:"2027-06-30"},
+   drafts:[
+     {n:"D1",date:"2026-04-18",dir:"sent",note:"Initial draft"},
+     {n:"D2",date:"2026-04-28",dir:"received",note:"Crestview requested changes on indemnity and SLA"},
+     {n:"D3",date:"2026-05-10",dir:"sent",note:"Updated SLA terms and indemnity cap"},
+     {n:"D4",date:"2026-05-20",dir:"received",note:"Final minor edits — accepted"},
+     {n:"D5",date:"2026-06-08",dir:"sent",note:"Execution copy sent"}
+   ],
+   clauses:[
+     {no:"2",name:"API Integration Scope & SLA",
+      full:"Defines the technical scope of API integration and uptime commitments. Crestview requested upgrade of uptime SLA from standard 99.5% to 99.9% given the scale of their deployment.",
+      changes:["API uptime SLA: 99.5% monthly measured availability.","Crestview requested upgrade to 99.9% uptime with hourly measurement window.","GyfTR accepted 99.9% SLA with 4-hour resolution window for P1 incidents.","No change.","Final execution copy — no change."]},
+     {no:"4",name:"Indemnity Cap",
+      full:"Indemnity cap governs maximum financial exposure for either party. Crestview proposed cap of ₹50L; GyfTR countered at ₹75L given platform risk profile; both agreed at ₹75L.",
+      changes:["Indemnity cap: ₹50 Lakhs aggregate.","Crestview requested reduction to ₹25L citing low transaction risk.","GyfTR counter-proposed ₹75L reflecting platform exposure.","Both parties agreed on ₹75L aggregate indemnity cap.","Final."]},
+     {no:"5",name:"SLA Penalties",
+      full:"Penalty structure for SLA breaches. Crestview proposed 10% credit on monthly fee per breach; GyfTR negotiated down to 8% with a cap of 15% total credits in any quarter.",
+      changes:["SLA breach penalty: 5% credit on monthly fee per incident.","Crestview proposed 10% per incident, uncapped.","GyfTR counter: 8% per incident, capped at 15% total per quarter.","Agreed — 8% per incident, 15% quarterly cap.","No further change."]},
+     {no:"6",name:"Data Security & Compliance",
+      full:"Data security requirements including certification standards. Crestview as a regulated entity required explicit ISO 27001 certification clause and right to audit.",
+      changes:["Data security: compliance with applicable IT Act provisions.","Crestview added ISO 27001 certification requirement and annual audit right.","GyfTR accepted ISO 27001 clause; audit right limited to once per year with 30-day notice.","Accepted.","Final."]},
+     {no:"7",name:"Term",
+      full:"Agreement duration. Crestview requested 2-year term to align with their vendor management cycle rather than the standard 1-year GyfTR template.",
+      changes:["Initial term: 1 year from effective date.","Crestview requested 2-year initial term.","GyfTR accepted 2-year term with annual performance review.","Agreed.","No change."]}
+   ]},
+  {id:4,client:"Harbor Bank",tag:"HBR",ct:"ct-p",sD:"2026-05-25",type:"Reseller",st:"review",clientStatus:"negotiating",
+   tm:{L:"tc-green",F:"tc-yellow",C:"tc-yellow",B:"tc-green"},
+   ms:{L:"Approved",F:"Under Review",C:"Under Review",B:"Approved"},
+   teamAging:{L:null,F:"+1d",C:"+2d",B:null},
+   ag:"+1d",ac:"ag-warn",lu:"2026-06-04",
+   remarks:[
+     {author:"Alex Carter",role:"Legal",ts:"2026-05-28 09:00",txt:"Approved from legal side."},
+     {author:"Riley Quinn",role:"Compliance",ts:"2026-06-04 14:00",txt:"Query on data localisation clause — needs amendment."}
+   ],
+   doc:"https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit",
+   sp:{B:"Taylor",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-06-08",
+   hist:[
+     {d:"2026-05-25 11:00",t:"Legal",b:"Alex",f:"—",to:"Approved"},
+     {d:"2026-05-28 09:00",t:"Business",b:"Taylor",f:"Pending",to:"Approved"},
+     {d:"2026-06-02 10:00",t:"Finance",b:"Jordan",f:"Pending",to:"Under Review"},
+     {d:"2026-06-04 14:00",t:"Compliance",b:"Riley",f:"Pending",to:"Under Review"}
+   ]},
+  {id:5,client:"Pinnacle Finserv",tag:"PNC",ct:"ct-a",sD:"2026-03-10",type:"Enterprise",st:"closed",clientStatus:"finalised",
+   tm:{L:"tc-green",F:"tc-green",C:"tc-green",B:"tc-green"},
+   ms:{L:"Approved",F:"Approved",C:"Approved",B:"Approved"},
+   teamAging:{L:null,F:null,C:null,B:null},
+   ag:"On time",ac:"ag-ok",lu:"2026-05-10",
+   remarks:[{author:"Alex Carter",role:"Legal",ts:"2026-05-10 12:00",txt:"Fully executed. Filing complete."}],
+   doc:"https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit",
+   sp:{B:"Sam",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-05-15",
+   hist:[
+     {d:"2026-03-10 11:00",t:"Legal",b:"Alex",f:"—",to:"Pending"},
+     {d:"2026-05-08 10:00",t:"All",b:"CEO",f:"Under Review",to:"Final Sign"},
+     {d:"2026-05-10 12:00",t:"Legal",b:"Alex",f:"Final Sign",to:"Closed"}
+   ]},
+  {id:6,client:"Aster Life",tag:"AST",ct:"ct-t",sD:"2026-05-01",type:"API / Direct",st:"review",clientStatus:"awaiting",
+   tm:{L:"tc-yellow",F:"tc-none",C:"tc-none",B:"tc-yellow"},
+   ms:{L:"Under Review",F:"Pending",C:"Pending",B:"Under Review"},
+   teamAging:{L:"+2d",F:null,C:null,B:"+2d"},
+   ag:"On time",ac:"ag-ok",lu:"2026-06-01",
+   remarks:[{author:"Taylor",role:"Business",ts:"2026-06-01 09:00",txt:"Initial draft shared with Aster team. Feedback expected in 3 days."}],
+   doc:"https://docs.google.com/document/d/19GynpWHuPzVZqyQXCIcRkkXCl4Zaji0P/edit",
+   sp:{B:"Taylor",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-06-25",
+   hist:[
+     {d:"2026-05-01 10:00",t:"Legal",b:"Alex",f:"—",to:"Under Review"},
+     {d:"2026-05-28 10:00",t:"Legal",b:"Alex",f:"—",to:"Under Review"},
+     {d:"2026-06-01 09:00",t:"Business",b:"Taylor",f:"Pending",to:"Under Review"}
+   ]},
+  {id:7,client:"Lumen Bank",tag:"LMN",ct:"ct-q",sD:"2026-05-18",type:"White Label",st:"pending",clientStatus:"awaiting",
+   tm:{L:"tc-none",F:"tc-none",C:"tc-none",B:"tc-none"},
+   ms:{L:"Pending",F:"Pending",C:"Pending",B:"Pending"},
+   teamAging:{L:null,F:null,C:null,B:null},
+   ag:"On time",ac:"ag-ok",lu:"2026-05-18",
+   remarks:[],
+   doc:"https://docs.google.com/document/d/17-mhtub5pwUDQT__kfNI8e1Liy5Ox9WA/edit",sp:{B:"Sam",L:"Alex",F:"Jordan",C:"Riley"},pd:"",
+   hist:[{d:"2026-05-18 11:00",t:"Legal",b:"Alex",f:"—",to:"Pending"}]},
+  {id:8,client:"Vantage Bank",tag:"VTB",ct:"ct-r",sD:"2026-04-01",type:"Reseller",st:"reopen",clientStatus:"responded",
+   tm:{L:"tc-yellow",F:"tc-red",C:"tc-none",B:"tc-green"},
+   ms:{L:"Under Review",F:"Pending",C:"Pending",B:"Approved"},
+   teamAging:{L:"+3d",F:"+5d",C:null,B:null},
+   ag:"+5d",ac:"ag-over",lu:"2026-06-06",
+   remarks:[
+     {author:"Jordan Lee",role:"Finance",ts:"2026-06-06 15:00",txt:"Rejected. Revenue share terms unacceptable — minimum 18% required. Please rework."},
+     {author:"Alex Carter",role:"Legal",ts:"2026-06-07 10:30",txt:"Noted. Reworking clauses 4.2 and 4.3. Revised draft coming shortly."}
+   ],
+   doc:"https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit",
+   sp:{B:"Taylor",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-05-30",
+   hist:[
+     {d:"2026-04-01 11:00",t:"Legal",b:"Alex",f:"—",to:"Pending"},
+     {d:"2026-05-10 09:00",t:"Business",b:"Taylor",f:"Pending",to:"Approved"},
+     {d:"2026-05-20 10:00",t:"Finance",b:"Jordan",f:"Under Review",to:"Approved"},
+     {d:"2026-06-06 15:00",t:"Finance",b:"Jordan",f:"Approved",to:"Rejected"}
+   ],
+   clientDates:{draftStart:"2026-04-01",latestModified:"2026-06-07",effectiveDate:"",signingDate:"",endDate:""},
+   drafts:[
+     {n:"D1",date:"2026-04-05",dir:"sent",note:"Initial draft sent"},
+     {n:"D2",date:"2026-04-18",dir:"received",note:"Client proposed major revenue share revision"},
+     {n:"D3",date:"2026-05-02",dir:"sent",note:"Counter proposal sent"},
+     {n:"D4",date:"2026-05-15",dir:"received",note:"Client partially accepted"},
+     {n:"D5",date:"2026-06-01",dir:"sent",note:"Near-final draft"},
+     {n:"D6",date:"2026-06-06",dir:"received",note:"Finance internally rejected — needs rework"}
+   ],
+   clauses:[
+     {no:"2",name:"Revenue Share",outcome:"pending",
+      full:"Revenue share is the primary commercial term under dispute. GyfTR standard is 20%; Vantage proposed 12% citing reseller margin requirements; multiple rounds of negotiation led to 17% which internal finance subsequently rejected requiring 18% minimum.",
+      changes:["GyfTR revenue share: 20% of net GMV processed.","Vantage proposed 12% citing thin reseller margin.","GyfTR counter: 18% — minimum acceptable threshold.","Vantage agreed 16% with volume escalator above ₹10Cr/quarter.","Renegotiated to 17% flat after volume escalator deemed unworkable.","Finance internally rejected 17% — requires minimum 18%. Back to negotiation."]},
+     {no:"3",name:"Payment Cycle",outcome:"accepted",
+      full:"Vantage requested longer payment cycle to align with their quarterly settlement process. GyfTR accepted 45 days from invoice date.",
+      changes:["Payment due within 30 days of invoice.","Vantage requested 45-day payment cycle.","GyfTR accepted 45 days — no further conditions.","No change.","No change.","No change."]},
+     {no:"4",name:"Exclusivity",outcome:"held",
+      full:"Vantage requested exclusive rights to distribute GyfTR vouchers in the banking channel. GyfTR declined given existing partnerships with competing banks.",
+      changes:["Agreement is non-exclusive. GyfTR may partner with other banks.","Vantage requested exclusive distribution rights in banking channel.","GyfTR declined exclusivity citing existing bank partnerships.","Vantage withdrew exclusivity request.","No change.","No change."]},
+     {no:"5",name:"Term",outcome:"partial",
+      full:"Initial term negotiation. Vantage preferred 2-year term; settled at 18 months as a compromise.",
+      changes:["Initial term: 1 year from effective date.","Vantage requested 2-year term.","Counter-proposed 18 months as compromise.","Vantage accepted 18 months.","No change.","No change."]},
+     {no:"6",name:"Termination Notice",outcome:"accepted",
+      full:"Termination notice period. Vantage wanted 90 days to allow operational wind-down; GyfTR accepted.",
+      changes:["Termination notice: 60 days.","Vantage requested 90-day notice period for operational continuity.","GyfTR accepted 90-day notice.","No change.","No change.","No change."]}
+   ]}
+];
+
+/* ══ GLOBAL STATE ══ */
+let reminderLog={};
+let lastSeenRemarks={};
+let _currentDocCopyUrl=null;
+
+
+/* ══ PROMISE DATE HELPERS ══ */
+function promiseDaysLeft(pd){
+  if(!pd)return null;
+  return Math.floor((new Date(pd)-new Date())/86400000);
+}
+function renderPromiseBadge(pd){
+  if(!pd)return'<span style="color:#c4cfc7;font-size:11px">—</span>';
+  const d=promiseDaysLeft(pd);
+  if(d<0)return`<span class="pd-over">Overdue ${Math.abs(d)}d</span>`;
+  if(d<=3)return`<span class="pd-warn">Due in ${d}d</span>`;
+  return`<span class="pd-ok">Due ${fd(pd)}</span>`;
+}
+
+const SC={pending:{l:"Pending",c:"b-pending"},review:{l:"Under Review",c:"b-review"},final:{l:"Final Sign",c:"b-final"},closed:{l:"Closed",c:"b-closed"},reopen:{l:"Reopened",c:"b-reopen"}};
+const TF={L:"Legal",F:"Finance",C:"Compliance",B:"Business"};
+const TCL={"tc-green":"Approved","tc-yellow":"Under Review","tc-none":"Pending","tc-red":"Rejected"};
+// dot CSS class per state
+const DOT_CLS={"tc-green":"dot-approved","tc-yellow":"dot-review","tc-none":"dot-pending","tc-red":"dot-rejected"};
+const TXT_CLS={"tc-green":"txt-approved","tc-yellow":"txt-review","tc-none":"txt-pending","tc-red":"txt-rejected"};
+const CYC=["tc-none","tc-yellow","tc-green","tc-red"];
+// aging CSS for per-team aging
+function agTeamCls(ag){if(!ag||ag==="On time")return"";if(ag.startsWith("+"))return parseInt(ag)>=5?"ag-team-over":"ag-team-warn";return "";}
+
+let role="legal",selRole="legal",cfKey="all",remAgId=null;
+let teamFilterVis={L:true,F:true,C:true,B:true};
+
+/* ════════ HELPERS ════════ */
+const fd=d=>{if(!d)return"—";const[y,m,dy]=d.split("-");return`${parseInt(dy)} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m-1]}`};
+const ns=()=>{const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")} ${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`};
+const td=()=>new Date().toISOString().split("T")[0];
+
+// parse "2026-06-05 14:22" → Date
+function parseTs(s){const[d,t]=s.split(" ");const[y,mo,dy]=d.split("-");const[h,mi]=(t||"00:00").split(":");return new Date(+y,+mo-1,+dy,+h,+mi);}
+
+// compute duration between two timestamps → "2d 3h" or "45m" etc.
+function diffLabel(t1,t2){
+  const ms=Math.abs(parseTs(t2)-parseTs(t1));
+  const mins=Math.floor(ms/60000);
+  if(mins<60)return`${mins}m`;
+  const hrs=Math.floor(mins/60),rm=mins%60;
+  if(hrs<24)return rm>0?`${hrs}h ${rm}m`:`${hrs}h`;
+  const days=Math.floor(hrs/24),rh=hrs%24;
+  return rh>0?`${days}d ${rh}h`:`${days}d`;
+}
+
+function showToast(m,type=""){
+  const t=document.getElementById("toast");
+  t.textContent=m;t.className="toast show"+(type?" "+type:"");
+  setTimeout(()=>t.classList.remove("show"),2400);
+}
+
+/* ════════ LOGIN ════════ */
+function pickRole(el,k){
+  document.querySelectorAll(".role-pill").forEach(b=>b.classList.remove("sel"));
+  el.classList.add("sel");selRole=k;
+  const em={legal:"alex.carter@example.com",finance:"jordan.lee@example.com",business:"sam.rivera@example.com",compliance:"riley.quinn@example.com"};
+  document.getElementById("loginEmail").value=em[k];
+}
+function doLogin(){
+  role=selRole;
+  const R=ROLES[role];
+  document.getElementById("uName").textContent=R.name;
+  document.getElementById("uRole").textContent=R.role;
+  document.getElementById("uAv").textContent=R.av;
+  document.getElementById("newWrap").style.display=R.canCreate?"block":"none";
+  const rb=document.getElementById("restrictBar");
+  if(!R.canCreate){rb.style.display="block";document.getElementById("restrictRole").textContent=R.role}
+  else rb.style.display="none";
+  document.getElementById("loginScreen").style.display="none";
+  document.getElementById("appShell").style.display="flex";
+  // set last login tooltip
+  const now=new Date();
+  const timeStr=now.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",hour12:true});
+  const tt=document.getElementById("avTooltip");
+  if(tt)tt.textContent=`Signed in today at ${timeStr}`;
+  updateStats();render(gf());
+  checkReminderNotifications();
+}
+function doSignout(){
+  document.getElementById("appShell").style.display="none";
+  document.getElementById("loginScreen").style.display="flex";
+  closeDoc();
+  closeDashboard();
+}
+
+/* ════════ REMINDER NOTIFICATIONS ════════ */
+function checkReminderNotifications(){
+  const bar=document.getElementById("reminderNotifBar");
+  const myTeam=ROLES[role].team;
+  if(role==="legal"){bar.classList.remove("show");return;}
+
+  // find all reminders that include my team
+  const myReminders=[];
+  Object.values(reminderLog).forEach(logs=>{
+    logs.forEach(log=>{
+      if(log.teams&&log.teams.includes(myTeam)){
+        myReminders.push(log);
+      }
+    });
+  });
+
+  if(!myReminders.length){bar.classList.remove("show");return;}
+
+  // show the bar
+  bar.classList.add("show");
+  document.getElementById("rnTitle").textContent=
+    `${myReminders.length} pending reminder${myReminders.length>1?"s":""} from Legal — please action`;
+
+  const items=document.getElementById("rnItems");
+  items.innerHTML=myReminders.map(log=>`
+    <div class="rn-item">
+      <div class="rn-item-client">${log.client}</div>
+      <div class="rn-item-from">Reminder from <b>${log.from}</b></div>
+      <div class="rn-item-ts">${log.ts}</div>
+      <span class="rn-item-badge">Action needed</span>
+    </div>`).join("");
+}
+
+function dismissReminderBar(){
+  document.getElementById("reminderNotifBar").classList.remove("show");
+}
+
+/* ════════ STATS ════════ */
+function updateStats(){
+  const c={all:AGs.length,pending:0,review:0,final:0,closed:0,reopen:0};
+  AGs.forEach(a=>{if(c[a.st]!==undefined)c[a.st]++});
+  Object.keys(c).forEach(k=>{const el=document.getElementById("s-"+k);if(el)el.textContent=c[k]});
+}
+
+/* ════════ RENDER TABLE ════════ */
+function render(data){
+  const tb=document.getElementById("tbody"),mt=ROLES[role].team;
+  tb.innerHTML="";
+  data.forEach(a=>{
+    const sm=SC[a.st];
+    const myS=a.ms[mt]||"Pending";
+    const lastRem=a.remarks&&a.remarks.length?a.remarks[a.remarks.length-1]:null;
+    const remCount=a.remarks?a.remarks.length:0;
+
+    // Team Review: one row per team — circle · name · aging
+    const visTeams=["L","F","C","B"].filter(t=>teamFilterVis[t]);
+    const trRows=visTeams.map(t=>{
+      const state=a.tm[t];
+      const dotCls=DOT_CLS[state]||"dot-pending";
+      const statusTxt=TCL[state]||"Pending";
+      const ag=a.teamAging?a.teamAging[t]:null;
+      const agCls=ag?(parseInt(ag)>=5?"ag-team-over":"ag-team-warn"):"";
+      return `<div class="tr-row">
+        <span class="tr-dot ${dotCls}" title="${TF[t]}: ${statusTxt}"></span>
+        <span class="tr-name">${TF[t]}</span>
+        ${ag?`<span class="tr-aging-val ${agCls}">${ag}</span>`:`<span style="font-size:10px;color:#c4cfc7">—</span>`}
+      </div>`;
+    }).join("");
+
+    // Can this user click team circles? Only their own team (or legal = all)
+    const tr=document.createElement("tr");
+    const pdLeft=a.pd?promiseDaysLeft(a.pd):null;
+    if(pdLeft!==null&&pdLeft<0)tr.classList.add("row-overdue");
+    else if(pdLeft!==null&&pdLeft<=3)tr.classList.add("row-dueSoon");
+    tr.innerHTML=`
+      <td class="gx-td">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="ctag ${a.ct}">${a.tag}</span>
+          <div>
+            <div style="font-weight:700;font-size:12.5px">${a.client}
+              ${role==="legal"?`<button class="pencil-btn" onclick="openClientScreen(${a.id})" title="Edit client details" style="margin-left:3px">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M11 2l3 3-9 9H2v-3l9-9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              </button>`:""}
+              <button class="share-btn" onclick="copyAgLink(${a.id},event)" title="Copy link to this agreement">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M10 2h4v4M14 2l-6 6M7 4H3a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+            <div style="font-size:10.5px;color:var(--ink-soft);margin-top:1px">${a.type} · ${fd(a.sD)}</div>
+            <div style="margin-top:3px">${renderPromiseBadge(a.pd)}</div>
+          </div>
+        </div>
+      </td>
+      <td class="gx-td">${renderClientStatusBadge(a.clientStatus||"awaiting",a.id)}</td>
+      <td class="gx-td">
+        ${role==="legal"
+          ? `<select class="status-sel" onchange="updateAgreementStatus(${a.id},this.value)">
+              <option value="pending"  ${a.st==="pending" ?"selected":""}>Pending</option>
+              <option value="review"   ${a.st==="review"  ?"selected":""}>Under Review</option>
+              <option value="final"    ${a.st==="final"   ?"selected":""}>Final Sign</option>
+              <option value="closed"   ${a.st==="closed"  ?"selected":""}>Closed</option>
+              <option value="reopen"   ${a.st==="reopen"  ?"selected":""}>Reopened</option>
+            </select>`
+          : `<span class="badge ${sm.c}"><span class="bdot"></span>${sm.l}</span>`
+        }
+      </td>
+      <td class="gx-td">
+        <select class="mss" onchange="ums(${a.id},this.value)">
+          <option ${myS==="Pending"?"selected":""}>Pending</option>
+          <option ${myS==="Under Review"?"selected":""}>Under Review</option>
+          <option ${myS==="Approved"?"selected":""}>Approved</option>
+        </select>
+      </td>
+      <td class="gx-td" style="min-width:160px">
+        <div class="tr-col" id="trcol-${a.id}">${trRows}</div>
+      </td>
+      <td class="gx-td" style="min-width:140px">
+        <div class="rem-cell">
+          ${(lastSeenRemarks[a.id]!==undefined&&remCount>lastSeenRemarks[a.id])?'<span class="rem-new-dot" title="New remarks"></span>':''}
+          <span class="rem-preview ${lastRem?'':'empty'}" onclick="openRem(${a.id})">${lastRem?lastRem.txt:'No remarks yet'}</span>
+          <button class="rem-plus" onclick="openRem(${a.id})" title="${remCount} remark${remCount!==1?'s':''}">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+          ${remCount?`<span class="rem-badge" onclick="openRem(${a.id})">${remCount}</span>`:""}
+        </div>
+      </td>
+      <td class="gx-td">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          ${(a.drafts&&a.drafts.length)?`<button class="gx-btn gx-btn-soft" style="padding:4px 9px;font-size:11px;font-weight:700" onclick="openDraftsModal(${a.id})">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M11 2v4h3" stroke="currentColor" stroke-width="1.4"/><path d="M5 9h6M5 12h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Drafts&nbsp;<span style="background:var(--pop-deep);color:#fff;border-radius:99px;padding:0px 5px;font-size:9px">${a.drafts.length}</span>
+          </button>`:`<button class="gx-btn gx-btn-ghost" style="padding:4px 9px;font-size:11px;opacity:.5" onclick="openDraftsModal(${a.id})">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M11 2v4h3" stroke="currentColor" stroke-width="1.4"/></svg>
+            Drafts
+          </button>`}
+          <button class="gx-btn gx-btn-ghost" style="padding:4px 9px;font-size:11px" onclick="openHist(${a.id})">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5v4l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Log
+          </button>
+        </div>
+      </td>
+      <td class="gx-td">
+        <button class="gx-btn gx-btn-soft" style="padding:4px 9px;font-size:11px" onclick="openDoc(${a.id})">
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M3 2h8l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5"/><path d="M11 2v4h3" stroke="currentColor" stroke-width="1.5"/></svg>Doc
+        </button>
+      </td>`;
+    tr.setAttribute("tabindex","0");
+    tr.addEventListener("keydown",e=>{
+      if(e.key==="Enter"){const docBtn=tr.querySelector(".gx-btn-soft");if(docBtn)docBtn.click();}
+      if(e.key==="ArrowDown"){const next=tr.nextElementSibling;if(next){next.focus();e.preventDefault();}}
+      if(e.key==="ArrowUp"){const prev=tr.previousElementSibling;if(prev){prev.focus();e.preventDefault();}}
+    });
+    tb.appendChild(tr);
+  });
+  document.getElementById("rcount").textContent=`${data.length} of ${AGs.length} agreements`;
+}
+
+/* ════════ FILTERS ════════ */
+function gf(){
+  const q=(document.getElementById("sb")?.value||"").toLowerCase();
+  const fs=document.getElementById("fSt")?.value||"";
+  const ft=document.getElementById("fTy")?.value||"";
+  const fm=document.getElementById("fMs")?.value||"";
+  const fts=document.getElementById("fTeamSt")?.value||"";
+  const mt=ROLES[role].team;
+  return AGs.filter(a=>{
+    if(q&&!a.client.toLowerCase().includes(q))return false;
+    if(fs&&a.st!==fs)return false;
+    if(ft&&!a.type.includes(ft))return false;
+    if(fm&&a.ms[mt]!==fm)return false;
+    if(cfKey!=="all"&&a.st!==cfKey)return false;
+    if(fts){
+      const active=["L","F","C","B"].filter(k=>teamFilterVis[k]);
+      if(!active.some(k=>TCL[a.tm[k]]===fts))return false;
+    }
+    return true;
+  });
+}
+function ftbl(){render(gf())}
+function fstat(el,k){
+  document.querySelectorAll(".stat-card").forEach(c=>c.classList.remove("on"));
+  el.classList.add("on");cfKey=k;ftbl();
+  // scroll table back to top
+  const scroll=document.querySelector(".table-scroll");
+  if(scroll)scroll.scrollTop=0;
+}
+
+/* ════════ TEAM FILTER DROPDOWN ════════ */
+function toggleTeamDD(e){
+  e.stopPropagation();
+  const dd=document.getElementById("teamDD");
+  dd.style.display=dd.style.display==="none"?"block":"none";
+}
+function toggleTeamOpt(team,el){
+  teamFilterVis[team]=!teamFilterVis[team];
+  const cb=document.getElementById("tcb-"+team);
+  if(teamFilterVis[team]){cb.classList.add("on");cb.textContent="✓";}
+  else{cb.classList.remove("on");cb.textContent="";}
+  const anyOff=Object.values(teamFilterVis).some(v=>!v)||document.getElementById("fTeamSt").value!=="";
+  document.getElementById("teamFilterBtn").classList.toggle("on",anyOff);
+  ftbl();
+}
+document.addEventListener("click",e=>{
+  if(!document.getElementById("teamFilterWrap").contains(e.target))
+    document.getElementById("teamDD").style.display="none";
+});
+document.getElementById("fTeamSt").addEventListener("change",()=>{
+  const anyOff=Object.values(teamFilterVis).some(v=>!v)||document.getElementById("fTeamSt").value!=="";
+  document.getElementById("teamFilterBtn").classList.toggle("on",anyOff);
+});
+
+
+/* My Status dropdown → syncs to Team Review + logs history */
+const MS_TO_TC={"Pending":"tc-none","Under Review":"tc-yellow","Approved":"tc-green","Rejected":"tc-red"};
+const TC_TO_MS={"tc-none":"Pending","tc-yellow":"Under Review","tc-green":"Approved","tc-red":"Rejected"};
+function ums(id,v){
+  const a=AGs.find(x=>x.id===id);
+  const mt=ROLES[role].team;
+  const prevTm=a.tm[mt]||"tc-none";
+  const prev=TC_TO_MS[prevTm]||"Pending";
+  a.ms[mt]=v;
+  a.tm[mt]=MS_TO_TC[v]||"tc-none";
+  if(prev!==v){
+    a.hist.push({d:ns(),t:TF[mt],b:ROLES[role].name,f:prev,to:v});
+    showToast(TF[mt]+" → "+v,"green");
+  } else {
+    showToast("Status updated");
+  }
+  ftbl();
+}
+/* Legal only: change overall agreement status */
+function updateAgreementStatus(id,v){
+  const a=AGs.find(x=>x.id===id);
+  const prev=SC[a.st]?SC[a.st].l:a.st;
+  a.st=v;
+  const next=SC[v]?SC[v].l:v;
+  a.hist.push({d:ns(),t:"Legal",b:ROLES[role].name,f:prev,to:next});
+  updateStats();ftbl();
+  showToast("Agreement status → "+next,"green");
+}
+
+function updateLU(id,v){
+  const a=AGs.find(x=>x.id===id);a.lu=v;showToast("Saved","green");ftbl();
+}
+
+/* ════════ HISTORY MODAL ════════ */
+let histAllRows=[];
+function openHist(id){
+  const a=AGs.find(x=>x.id===id);
+  document.getElementById("histTitle").textContent=`Status History — ${a.client}`;
+  // reset filters
+  document.getElementById("histSearch").value="";
+  document.getElementById("histTeamFilter").value="";
+  document.getElementById("histChangeFilter").value="";
+
+  // sort ascending
+  const sorted=[...a.hist].sort((x,y)=>parseTs(x.d)-parseTs(y.d));
+  const teamLastEntry={};
+  histAllRows=sorted.map(h=>{
+    const prev=teamLastEntry[h.t];
+    const oldDt=prev?prev.d:"—";
+    const timeTaken=prev?diffLabel(prev.d,h.d):"—";
+    teamLastEntry[h.t]=h;
+    return {h,oldDt,timeTaken};
+  });
+
+  renderHistRows(histAllRows);
+  document.getElementById("histModal").classList.add("show");
+}
+function renderHistRows(rows){
+  document.getElementById("histBody").innerHTML=rows.map(({h,oldDt,timeTaken})=>`
+    <tr>
+      <td style="font-weight:700;white-space:nowrap">${h.t}</td>
+      <td style="color:var(--ink-soft)">${h.b}</td>
+      <td style="color:var(--ink-soft);font-size:11px;white-space:nowrap">${oldDt!=="—"?oldDt:'<span style="color:#c4cfc7">—</span>'}</td>
+      <td style="font-size:11px;white-space:nowrap;font-weight:600;color:var(--ink)">${h.d}</td>
+      <td><span class="hf">${h.f}</span><span class="harr">→</span><span class="ht2">${h.to}</span></td>
+      <td>${timeTaken!=="—"?`<span class="ht-time-taken">${timeTaken}</span>`:'<span style="color:#c4cfc7;font-size:11px">—</span>'}</td>
+    </tr>`).join("")||`<tr><td colspan="6" style="text-align:center;padding:22px;color:#94a59b;font-size:13px">No entries match the filter.</td></tr>`;
+  document.getElementById("histCount").textContent=`${rows.length} of ${histAllRows.length} entries`;
+}
+function filterHist(){
+  const q=(document.getElementById("histSearch").value||"").toLowerCase();
+  const team=document.getElementById("histTeamFilter").value;
+  const change=document.getElementById("histChangeFilter").value;
+  const filtered=histAllRows.filter(({h})=>{
+    if(q&&!(h.t+h.b+h.f+h.to).toLowerCase().includes(q))return false;
+    if(team&&h.t!==team)return false;
+    if(change&&h.to!==change)return false;
+    return true;
+  });
+  renderHistRows(filtered);
+}
+function closeHist(){document.getElementById("histModal").classList.remove("show")}
+
+/* ════════ REMARKS MODAL ════════ */
+function openRem(id){
+  remAgId=id;
+  const a=AGs.find(x=>x.id===id);
+  lastSeenRemarks[id]=(a.remarks||[]).length;
+  document.getElementById("remTitle").textContent=`Remarks — ${a.client}`;
+  // reset filters
+  document.getElementById("remSearch").value="";
+  document.getElementById("remRoleFilter").value="";
+  document.getElementById("remInput").value="";
+  renderRemFiltered(a);
+  document.getElementById("remModal").classList.add("show");
+}
+function renderRemFiltered(a){
+  const src=a||(remAgId?AGs.find(x=>x.id===remAgId):null);
+  if(!src)return;
+  const q=(document.getElementById("remSearch").value||"").toLowerCase();
+  const roleF=document.getElementById("remRoleFilter").value;
+  const all=src.remarks||[];
+  const filtered=all.filter(r=>{
+    if(q&&!(r.author+r.txt+r.role).toLowerCase().includes(q))return false;
+    if(roleF&&r.role!==roleF)return false;
+    return true;
+  });
+  const list=document.getElementById("remList");
+  document.getElementById("remCount").textContent=`${filtered.length} of ${all.length} remarks`;
+  if(all.length===0){
+    list.innerHTML=`<div style="text-align:center;padding:28px 0;color:var(--ink-soft);font-size:13px">No remarks yet.</div>`;return;
+  }
+  if(filtered.length===0){
+    list.innerHTML=`<div style="text-align:center;padding:22px 0;color:#94a59b;font-size:13px">No remarks match the filter.</div>`;return;
+  }
+  list.innerHTML=filtered.map(r=>`
+    <div class="rem-entry gx-fade">
+      <div class="rem-entry-meta">
+        <span class="rem-entry-author">${r.author}</span>
+        <span class="rem-entry-role">${r.role}</span>
+        <span class="rem-entry-ts">${r.ts}</span>
+      </div>
+      <div class="rem-entry-txt">${r.txt}</div>
+    </div>`).join("");
+  list.scrollTop=list.scrollHeight;
+}
+function filterRem(){renderRemFiltered(null);}
+function renderRemList(a){renderRemFiltered(a);}
+function submitRem(){
+  const txt=document.getElementById("remInput").value.trim();
+  if(!txt)return;
+  const a=AGs.find(x=>x.id===remAgId);
+  const R=ROLES[role];
+  if(!a.remarks)a.remarks=[];
+  a.remarks.push({author:R.name,role:R.role.replace(" Team",""),ts:ns(),txt});
+  a.lu=td();
+  document.getElementById("remInput").value="";
+  renderRemFiltered(a);
+  ftbl();
+  showToast("Remark added","green");
+}
+function closeRem(){document.getElementById("remModal").classList.remove("show");remAgId=null;}
+
+/* ════════ DOC FULL SCREEN ════════ */
+function openDoc(id){
+  const a=AGs.find(x=>x.id===id);
+  document.getElementById("docClientName").textContent=a.client;
+  document.getElementById("docTypeTag").textContent=a.type;
+
+  const sm=SC[a.st];
+  document.getElementById("docStatusArea").innerHTML=`<span class="badge ${sm.c}"><span class="bdot"></span>${sm.l}</span>`;
+
+  // info panel
+  const lastRem=a.remarks&&a.remarks.length?a.remarks[a.remarks.length-1]:null;
+  const teamRows=["L","F","C","B"].map(t=>{
+    const dotCls=DOT_CLS[a.tm[t]]||"dot-pending";
+    const txtCls=TXT_CLS[a.tm[t]]||"txt-pending";
+    const ag=a.teamAging?a.teamAging[t]:null;
+    return `<div class="doc-team-row">
+      <span class="doc-team-dot ${dotCls}"></span>
+      <span class="doc-team-name">${TF[t]}</span>
+      <span class="doc-team-status ${txtCls}">${TCL[a.tm[t]]}</span>
+      ${ag?`<span class="${agTeamCls(ag)}" style="margin-left:4px">${ag}</span>`:""}
+    </div>`;
+  }).join("");
+
+  document.getElementById("docInfoPanel").innerHTML=`
+    <div class="doc-info-title">Agreement Details</div>
+    <div class="di-row"><span class="di-key">Client</span><span class="di-val" style="font-weight:700;font-family:var(--font-d);font-size:14px">${a.client}</span></div>
+    <div class="di-row"><span class="di-key">Type</span><span class="di-val">${a.type}</span></div>
+    <div class="di-row"><span class="di-key">Start Date</span><span class="di-val">${fd(a.sD)}</span></div>
+    <div class="di-row"><span class="di-key">Promise</span><span class="di-val">${a.pd?fd(a.pd):"—"}</span></div>
+    <div class="di-row"><span class="di-key">Overall Aging</span><span class="di-val"><span class="${a.ac}">${a.ag}</span></span></div>
+    <div class="di-row"><span class="di-key">Last Updated</span><span class="di-val">${fd(a.lu)}</span></div>
+    <div class="di-row"><span class="di-key">SPOCs</span><span class="di-val" style="font-size:12px;color:var(--ink-soft)">
+      L: ${a.sp.L} &nbsp;·&nbsp; F: ${a.sp.F}<br>C: ${a.sp.C} &nbsp;·&nbsp; B: ${a.sp.B}
+    </span></div>
+    <div style="height:12px"></div>
+    <div class="doc-info-title">Team Review</div>
+    ${teamRows}
+    <div style="height:12px"></div>
+    <div class="doc-info-title">Latest Remark</div>
+    ${lastRem?`
+      <div style="background:#F4F8F4;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:4px">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:700;color:var(--ink)">${lastRem.author}</span>
+          <span style="font-size:10px;font-weight:700;color:var(--pop-deep);background:var(--pop-soft);padding:1px 7px;border-radius:6px">${lastRem.role}</span>
+          <span style="font-size:10.5px;color:#94a59b;margin-left:auto">${lastRem.ts}</span>
+        </div>
+        <div style="font-size:12.5px;color:var(--ink);line-height:1.45">${lastRem.txt}</div>
+      </div>
+      ${a.remarks.length>1?`<button class="gx-btn gx-btn-soft" style="margin-top:10px;font-size:12px;padding:6px 12px" onclick="openRem(${a.id})">View all ${a.remarks.length} remarks</button>`:""}
+    `:`<div style="font-size:13px;color:#94a59b;padding:8px 0">No remarks yet.</div>`}
+    <div style="height:12px"></div>
+    <div class="doc-info-title">Status History</div>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-top:4px">
+      ${[...a.hist].sort((x,y)=>parseTs(x.d)-parseTs(y.d)).slice(-4).map(h=>`
+        <div style="display:flex;align-items:center;gap:6px;font-size:11.5px">
+          <span style="font-size:9px;font-weight:700;background:#EEF4EF;color:var(--ink-soft);padding:1px 6px;border-radius:5px;flex-shrink:0">${h.t}</span>
+          <span style="color:var(--ink-soft)">${h.d.split(" ")[0]}</span>
+          <span style="color:#94a59b;font-size:10px">→</span>
+          <span style="font-weight:700;color:var(--ink)">${h.to}</span>
+        </div>`).join("")}
+    </div>
+    <button class="gx-btn gx-btn-ghost" style="margin-top:12px;font-size:12px;padding:6px 12px;width:100%;justify-content:center" onclick="closeDoc();setTimeout(()=>openHist(${a.id}),100)">
+      Full history log →
+    </button>`;
+
+  // embed real Google Doc
+  const docUrl=a.doc||"";
+  const docId=a._linkedDocId||(docUrl.match(/\/document\/d\/([a-zA-Z0-9_-]{10,})/)||[])[1];
+  const iframe=document.getElementById("docIframe");
+  const openLink=document.getElementById("docOpenLink");
+  const urlEl=document.getElementById("docFrameUrl");
+  if(urlEl) urlEl.textContent=`${a.client} — ${a.type} Agreement`;
+  if(docId){
+    const base=docUrl.replace(/[?#].*$/,"").replace(/\/edit$/,"");
+    iframe.src=`${base}/edit?rm=minimal`;
+    _currentDocCopyUrl=`${base}/copy`;
+    if(openLink) openLink.href=docUrl;
+  } else {
+    iframe.src="about:blank";
+    _currentDocCopyUrl=null;
+    if(openLink) openLink.href="#";
+  }
+
+  // sign bar
+  const signBar=document.getElementById("signBar");
+  const isSignRole=(role==="legal"||role==="business");
+  if(isSignRole){
+    signBar.style.display="flex";
+    const mt=ROLES[role].team;
+    const alreadySigned=a.signatures&&a.signatures[mt];
+    const actionArea=document.getElementById("signBarAction");
+    if(alreadySigned){
+      document.getElementById("signBarTitle").textContent="You've signed this agreement";
+      document.getElementById("signBarSub").textContent=`Signed by ${alreadySigned.name} on ${alreadySigned.ts}`;
+      actionArea.innerHTML=`<button class="sign-btn signed" disabled>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Signed
+      </button>`;
+    } else {
+      document.getElementById("signBarTitle").textContent="Ready to sign this agreement?";
+      document.getElementById("signBarSub").textContent="Review the document on the right, then sign below.";
+      actionArea.innerHTML=`<button class="sign-btn" onclick="openSignModal(${a.id})">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M2 12c1.5-1 3-2 4.5-1S9 13 10.5 12s3-2 3.5-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M3 10l2-5 2 3 2-6 2 4 1.5-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Sign Agreement
+      </button>`;
+    }
+  } else {
+    signBar.style.display="none";
+  }
+
+  document.getElementById("docScreen").classList.add("vis");
+}
+
+function closeDoc(){
+  document.getElementById("docScreen").classList.remove("vis");
+  const iframe=document.getElementById("docIframe");
+  if(iframe) iframe.src="about:blank";
+}
+
+/* ════════ SIGN ════════ */
+let signAgId=null;
+function openSignModal(id){
+  signAgId=id;
+  const a=AGs.find(x=>x.id===id);
+  document.getElementById("signDocName").textContent=a.client;
+  document.getElementById("signDocType").textContent=a.type;
+  document.getElementById("signName").value=ROLES[role].name;
+  document.getElementById("signDesig").value=ROLES[role].role;
+  document.getElementById("signModal").classList.add("show");
+}
+function closeSignModal(){
+  document.getElementById("signModal").classList.remove("show");
+  signAgId=null;
+}
+function confirmSign(){
+  const name=document.getElementById("signName").value.trim();
+  if(!name){showToast("Please enter your full name");return;}
+  const desig=document.getElementById("signDesig").value.trim();
+  const a=AGs.find(x=>x.id===signAgId);
+  const mt=ROLES[role].team;
+  if(!a.signatures)a.signatures={};
+  const signTs=ns();
+  a.signatures[mt]={name,desig,ts:signTs,role:ROLES[role].role};
+  // log to history
+  a.hist.push({d:signTs,t:TF[mt],b:name,f:"Unsigned",to:"Signed"});
+  // also mark their status as Approved
+  a.ms[mt]="Approved";
+  a.tm[mt]="tc-green";
+  closeSignModal();
+  ftbl();
+  updateStats();
+  // refresh sign bar state
+  const actionArea=document.getElementById("signBarAction");
+  document.getElementById("signBarTitle").textContent="You've signed this agreement";
+  document.getElementById("signBarSub").textContent=`Signed by ${name} on ${signTs}`;
+  actionArea.innerHTML=`<button class="sign-btn signed" disabled>
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Signed
+  </button>`;
+  showToast("Agreement signed successfully ✓","green");
+}
+
+/* ════════ CREATE ════════ */
+function openCreate(){document.getElementById("createModal").classList.add("show")}
+function closeCr(){document.getElementById("createModal").classList.remove("show")}
+function submitCr(){
+  const c=document.getElementById("fc").value.trim(),t=document.getElementById("fty").value;
+  if(!c||!t){showToast("Fill client name and type");return}
+  const R=ROLES[role];
+  AGs.unshift({id:AGs.length+1,client:c,tag:c.slice(0,4).toUpperCase(),ct:"ct-q",sD:td(),type:t,st:"pending",
+    tm:{L:"tc-none",F:"tc-none",C:"tc-none",B:"tc-none"},
+    ms:{L:"Pending",F:"Pending",C:"Pending",B:"Pending"},
+    teamAging:{L:null,F:null,C:null,B:null},
+    ag:"On time",ac:"ag-ok",lu:td(),
+    remarks:[{author:R.name,role:R.role.replace(" Team",""),ts:ns(),txt:"Agreement created."}],
+    doc:document.getElementById("fdoc").value||"",
+    sp:{B:document.getElementById("fb").value||"—",L:document.getElementById("fleg").value||"—",F:document.getElementById("ffin").value||"—",C:document.getElementById("fcom").value||"—"},
+    pd:document.getElementById("fpd").value||"",
+    hist:[{d:ns(),t:"Legal",b:R.name,f:"—",to:"Pending"}]
+  });
+  closeCr();updateStats();ftbl();showToast(`Agreement created for ${c}`,"green");
+  ["fc","fty","fpd","fb","fleg","ffin","fcom","fdoc"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=""});
+}
+
+/* ════════ CLOSE ON OVERLAY CLICK ════════ */
+document.getElementById("createModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeCr()});
+document.getElementById("histModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeHist()});
+document.getElementById("remModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeRem()});
+document.getElementById("remInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();submitRem()}});
+document.getElementById("signModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeSignModal()});
+document.getElementById("exportModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeExport();});
+
+/* ════════ SHARE / COPY LINK ════════ */
+function copyAgLink(id,e){
+  e.stopPropagation();
+  const a=AGs.find(x=>x.id===id);
+  // In production this would be a real URL; for demo we copy a descriptive reference
+  const txt=`GyfTR Legal Portal — ${a.client} (${a.type}) · Status: ${SC[a.st]?SC[a.st].l:a.st}`;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(()=>showToast("Link copied to clipboard","green")).catch(()=>showToast("Copied: "+txt));
+  } else {
+    showToast("Agreement reference copied","green");
+  }
+}
+
+/* ════════ PRINT HELPER ════════ */
+function printTable(){window.print();}
+
+/* ════════ PROMISE DATE ALERTS in Dashboard ════════ */
+// Extend renderDashboard to include overdue promise dates
+const _origRenderDashboard=renderDashboard;
+function renderDashboard(){
+  _origRenderDashboard();
+  // append overdue strip if any
+  const overdue=AGs.filter(a=>{
+    if(!a.pd||a.st==="closed")return false;
+    return promiseDaysLeft(a.pd)<=0;
+  });
+  const dueSoon=AGs.filter(a=>{
+    if(!a.pd||a.st==="closed")return false;
+    const d=promiseDaysLeft(a.pd);
+    return d>0&&d<=3;
+  });
+  if(!overdue.length&&!dueSoon.length)return;
+  const strip=document.createElement("div");
+  strip.style.cssText="margin-bottom:18px";
+  strip.innerHTML=`
+    ${overdue.length?`<div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:12px 16px;margin-bottom:10px">
+      <div style="font-size:11.5px;font-weight:700;color:#DC2626;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#DC2626" stroke-width="1.4"/><path d="M8 4.5v4M8 11v.5" stroke="#DC2626" stroke-width="1.4" stroke-linecap="round"/></svg>
+        ${overdue.length} agreement${overdue.length!==1?"s":""} past promise date
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px">
+        ${overdue.map(a=>`<span style="font-size:11.5px;font-weight:700;background:#fff;border:1px solid #FECACA;padding:3px 10px;border-radius:7px;color:#DC2626">${a.client} · ${Math.abs(promiseDaysLeft(a.pd))}d overdue</span>`).join("")}
+      </div>
+    </div>`:""}
+    ${dueSoon.length?`<div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:12px;padding:12px 16px">
+      <div style="font-size:11.5px;font-weight:700;color:#92400E;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#D97706" stroke-width="1.4"/><path d="M8 4.5v4M8 11v.5" stroke="#D97706" stroke-width="1.4" stroke-linecap="round"/></svg>
+        ${dueSoon.length} agreement${dueSoon.length!==1?"s":""} due within 3 days
+      </div>
+      <div style="display:flex;flex-wrap:gap;gap:7px">
+        ${dueSoon.map(a=>`<span style="font-size:11.5px;font-weight:700;background:#fff;border:1px solid #FCD34D;padding:3px 10px;border-radius:7px;color:#92400E">${a.client} · ${promiseDaysLeft(a.pd)}d left</span>`).join("")}
+      </div>
+    </div>`:""}`;
+  const body=document.getElementById("dashBody");
+  if(body)body.insertBefore(strip,body.children[1]);
+}
+
+/* ════════ REMINDER HISTORY — handled in sendNudge below ════════ */
+
+/* ════════ GLOBAL SEARCH (Cmd+K) ════════ */
+let gsActive=false;
+function openGlobalSearch(){
+  document.getElementById("globalSearchOverlay").classList.add("show");
+  document.getElementById("gsInput").value="";
+  document.getElementById("gsResults").innerHTML=`<div class="gs-empty"><div style="font-size:22px;margin-bottom:8px">🔍</div>Start typing to search agreements, clauses and remarks</div>`;
+  document.getElementById("gsResultCount").textContent="";
+  gsActive=true;
+  setTimeout(()=>document.getElementById("gsInput").focus(),80);
+}
+function closeGlobalSearch(){
+  document.getElementById("globalSearchOverlay").classList.remove("show");
+  gsActive=false;
+}
+document.addEventListener("keydown",e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();openGlobalSearch();}
+  if(e.key==="Escape"&&gsActive)closeGlobalSearch();
+});
+function runGlobalSearch(q){
+  const res=document.getElementById("gsResults");
+  if(!q.trim()){
+    res.innerHTML=`<div class="gs-empty"><div style="font-size:22px;margin-bottom:8px">🔍</div>Start typing to search agreements, clauses and remarks</div>`;
+    document.getElementById("gsResultCount").textContent="";
+    return;
+  }
+  const ql=q.toLowerCase();
+  const agMatches=[],clauseMatches=[],remMatches=[];
+
+  AGs.forEach(a=>{
+    // agreement name
+    if(a.client.toLowerCase().includes(ql)||a.type.toLowerCase().includes(ql)){
+      agMatches.push({type:"ag",label:a.client,sub:a.type+" · "+(SC[a.st]?SC[a.st].l:a.st),ct:a.ct,tag:a.tag,id:a.id});
+    }
+    // clauses
+    (a.clauses||[]).forEach(c=>{
+      if(c.name.toLowerCase().includes(ql)||(c.full||"").toLowerCase().includes(ql)){
+        clauseMatches.push({type:"clause",label:"Cl."+c.no+" · "+c.name,sub:a.client,ct:a.ct,tag:a.tag,agId:a.id});
+      }
+    });
+    // remarks
+    (a.remarks||[]).forEach(r=>{
+      if(r.txt.toLowerCase().includes(ql)||r.author.toLowerCase().includes(ql)){
+        remMatches.push({type:"remark",label:r.author+": "+r.txt.slice(0,60)+(r.txt.length>60?"…":""),sub:a.client+" · "+r.ts,ct:a.ct,tag:a.tag,agId:a.id});
+      }
+    });
+  });
+
+  const total=agMatches.length+clauseMatches.length+remMatches.length;
+  document.getElementById("gsResultCount").textContent=total+" result"+(total!==1?"s":"");
+
+  if(!total){
+    res.innerHTML=`<div class="gs-empty">No results for "<b>${q}</b>"</div>`;return;
+  }
+
+  const renderItem=(r,onclick)=>`<div class="gs-item" onclick="${onclick}">
+    <div class="gs-item-icon" style="background:${CT_COLORS[r.ct]||'#EEF4EF'}">
+      <span style="font-size:9px;font-weight:800;color:${CT_TEXT[r.ct]||'#586860'};font-family:var(--font-d)">${r.tag.slice(0,3)}</span>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div class="gs-item-main">${r.label}</div>
+      <div class="gs-item-sub">${r.sub}</div>
+    </div>
+    <span class="gs-item-tag" style="background:${r.type==="ag"?"#EEF4EF":r.type==="clause"?"#EDF6D9":"#EFF6FF"};color:${r.type==="ag"?"var(--ink-soft)":r.type==="clause"?"var(--pop-deep)":"#1D4ED8"}">${r.type==="ag"?"Agreement":r.type==="clause"?"Clause":"Remark"}</span>
+  </div>`;
+
+  let html="";
+  if(agMatches.length){
+    html+=`<div class="gs-section-lbl">Agreements</div>`;
+    html+=agMatches.map(r=>renderItem(r,`closeGlobalSearch();ftbl();document.getElementById('sb').value='${r.label}';ftbl()`)).join("");
+  }
+  if(clauseMatches.length){
+    html+=`<div class="gs-section-lbl">Clauses</div>`;
+    html+=clauseMatches.map(r=>renderItem(r,`closeGlobalSearch();openAnalyse();setTimeout(()=>selectAnAgreement(${r.agId}),200)`)).join("");
+  }
+  if(remMatches.length){
+    html+=`<div class="gs-section-lbl">Remarks</div>`;
+    html+=remMatches.map(r=>renderItem(r,`closeGlobalSearch();openRem(${r.agId})`)).join("");
+  }
+  res.innerHTML=html;
+}
+
+/* ════════ EXPORT ════════ */
+let exportOpt="all";
+function openExport(){
+  document.getElementById("exportModal").classList.add("show");
+  selectExportOpt(document.getElementById("exportOptAll"),"all");
+}
+function closeExport(){document.getElementById("exportModal").classList.remove("show");}
+function selectExportOpt(el,opt){
+  exportOpt=opt;
+  document.querySelectorAll(".export-opt").forEach(e=>{
+    e.style.border="1.5px solid var(--line)";
+    e.style.background="transparent";
+  });
+  el.style.border="1.5px solid var(--pop)";
+  el.style.background="var(--pop-soft)";
+}
+function doExport(){
+  const now=new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+  let rows="";
+  let data=AGs;
+  let title="All Agreements";
+  if(exportOpt==="stuck"){
+    data=AGs.filter(a=>["L","F","C","B"].some(t=>a.teamAging&&a.teamAging[t]&&parseInt(a.teamAging[t])>=3));
+    title="Bottleneck Report";
+  } else if(exportOpt==="pending"){
+    title="Open Clauses Report";
+    let clauseRows="";
+    AGs.forEach(a=>{
+      (a.clauses||[]).filter(c=>c.outcome==="pending").forEach(c=>{
+        clauseRows+=`<tr><td style="padding:9px 12px;border-bottom:1px solid #eee;font-weight:700">${a.client}</td><td style="padding:9px 12px;border-bottom:1px solid #eee">Cl.${c.no} · ${c.name}</td><td style="padding:9px 12px;border-bottom:1px solid #eee;color:#DC2626;font-weight:700">Pending</td><td style="padding:9px 12px;border-bottom:1px solid #eee;font-size:12px">${c.changes[c.changes.length-1]||"—"}</td></tr>`;
+      });
+    });
+    rows=clauseRows;
+    const doc=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title} — GyfTR Legal</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#15241B}h1{color:#4C8A1E;font-size:22px;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#EEF4EF;padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#586860}tr:hover td{background:#F4F8F4}</style></head><body><h1>GyfTR Legal · ${title}</h1><p style="color:#586860;font-size:13px">Generated ${now}</p><table><thead><tr><th>Agreement</th><th>Clause</th><th>Status</th><th>Last Position</th></tr></thead><tbody>${rows}</tbody></table></body></html>`
+    const pw=window.open('','_blank'); pw.document.write(doc); pw.document.close()
+    return
+  }
+  data.forEach(a=>{rows+=`<tr><td style="padding:9px 12px;border-bottom:1px solid #eee;font-weight:700">${a.client}</td><td style="padding:9px 12px;border-bottom:1px solid #eee">${a.type||'—'}</td><td style="padding:9px 12px;border-bottom:1px solid #eee">${a.st||'—'}</td><td style="padding:9px 12px;border-bottom:1px solid #eee;font-size:12px">${a.lu||'—'}</td></tr>`})
+  const doc=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title} — GyfTR Legal</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#15241B}h1{color:#4C8A1E;font-size:22px;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#EEF4EF;padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#586860}tr:hover td{background:#F4F8F4}</style></head><body><h1>GyfTR Legal · ${title}</h1><p style="color:#586860;font-size:13px">Generated ${now}</p><table><thead><tr><th>Agreement</th><th>Type</th><th>Status</th><th>Last Updated</th></tr></thead><tbody>${rows}</tbody></table></body></html>`
+  const w=window.open('','_blank'); w.document.write(doc); w.document.close()
+}
+</script>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

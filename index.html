@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GyfTR · Legal Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/css/style.css">
+</head>
+<body>
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <svg class="logo-img" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="5" y="22" width="34" height="18" rx="2.5" fill="#62A92A"/>
+        <rect x="3" y="16" width="38" height="8" rx="2" fill="#4C8A1E"/>
+        <rect x="19" y="16" width="6" height="24" fill="#fff" opacity=".35"/>
+        <rect x="3" y="19" width="38" height="2.5" fill="#fff" opacity=".35"/>
+        <ellipse cx="16" cy="13" rx="5.5" ry="4" transform="rotate(-20,16,13)" fill="#4C8A1E" stroke="#fff" stroke-width="1.2"/>
+        <ellipse cx="28" cy="13" rx="5.5" ry="4" transform="rotate(20,28,13)" fill="#4C8A1E" stroke="#fff" stroke-width="1.2"/>
+        <circle cx="22" cy="15" r="3" fill="#62A92A" stroke="#fff" stroke-width="1.5"/>
+      </svg>
+      <div class="logo-text-wrap">
+        <div class="logo-word">Gy<span>FTR</span></div>
+        <div class="logo-sub">Legal Portal</div>
+      </div>
+    </div>
+    <div class="login-card">
+      <div class="login-eyebrow">Workspace</div>
+      <div class="login-title">Sign in to continue</div>
+      <div class="login-sub-txt">Track · Negotiate · Close</div>
+      <div style="display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:600;color:var(--pop-deep);background:var(--pop-soft);padding:3px 9px;border-radius:6px">📋 Draft tracking</span>
+        <span style="font-size:11px;font-weight:600;color:#1D4ED8;background:#EFF6FF;padding:3px 9px;border-radius:6px">🔍 Clause analyser</span>
+        <span style="font-size:11px;font-weight:600;color:#7E22CE;background:#F5F3FF;padding:3px 9px;border-radius:6px">📊 Live dashboard</span>
+        <span style="font-size:11px;font-weight:600;color:#92400E;background:#FFFBEB;padding:3px 9px;border-radius:6px">🔔 Smart reminders</span>
+      </div>
+      <div class="login-field">
+        <label class="login-lbl">Company email</label>
+        <input class="gx-input" type="email" id="loginEmail" value="alex.carter@example.com">
+      </div>
+      <div class="login-field" style="margin-bottom:8px">
+        <label class="login-lbl">Password</label>
+        <input class="gx-input" type="password" id="loginPass" value="">
+      </div>
+      <div id="loginError" style="display:none;color:#DC2626;font-size:12.5px;margin-bottom:12px;font-weight:600"></div>
+      <button class="login-cta" id="loginBtn" onclick="handleSignIn()">Sign in &rarr;</button>
+      <div class="login-divider">or sign in as a role</div>
+      <div class="role-grid">
+        <button class="role-pill sel" onclick="pickRole(this,'legal')"><span class="role-name">Alex Carter</span><span class="role-desc">Legal &middot; Full access</span></button>
+        <button class="role-pill" onclick="pickRole(this,'finance')"><span class="role-name">Jordan Lee</span><span class="role-desc">Finance &middot; Review &amp; approve</span></button>
+        <button class="role-pill" onclick="pickRole(this,'business')"><span class="role-name">Sam Rivera</span><span class="role-desc">Business &middot; Review &amp; approve</span></button>
+        <button class="role-pill" onclick="pickRole(this,'compliance')"><span class="role-name">Riley Quinn</span><span class="role-desc">Compliance &middot; Review &amp; approve</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { signIn } from '/src/auth/login.js'
+
+  let selectedRole = 'legal'
+
+  window.pickRole = function (el, k) {
+    document.querySelectorAll('.role-pill').forEach(b => b.classList.remove('sel'))
+    el.classList.add('sel')
+    selectedRole = k
+    const emails = {
+      legal:      'alex.carter@example.com',
+      finance:    'jordan.lee@example.com',
+      business:   'sam.rivera@example.com',
+      compliance: 'riley.quinn@example.com'
+    }
+    const emailEl = document.getElementById('loginEmail')
+    if (emailEl) emailEl.value = emails[k]
+  }
+
+  window.handleSignIn = async function () {
+    const btn = document.getElementById('loginBtn')
+    const errorEl = document.getElementById('loginError')
+    const email = document.getElementById('loginEmail')?.value?.trim()
+    const password = document.getElementById('loginPass')?.value
+
+    errorEl.style.display = 'none'
+
+    if (!email || !password) {
+      errorEl.textContent = 'Enter both email and password.'
+      errorEl.style.display = 'block'
+      return
+    }
+
+    btn.textContent = 'Signing in…'
+    btn.disabled = true
+
+    try {
+      await signIn(email, password)
+      window.location.href = '/app.html'
+    } catch (err) {
+      btn.textContent = 'Sign in →'
+      btn.disabled = false
+      errorEl.textContent = 'Invalid email or password.'
+      errorEl.style.display = 'block'
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.handleSignIn()
+  })
+</script>
+</body>
+</html>
