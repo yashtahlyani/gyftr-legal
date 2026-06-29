@@ -1,11 +1,15 @@
 // Google Picker + Drive + Docs API integration — GyfTR Legal Portal
 
+// All Google credentials are supplied via environment variables (see
+// .env.example). Client-side API keys MUST be restricted by HTTP referrer in
+// the Google Cloud Console. The OAuth client ID is public by design but still
+// identifies the project, so it is kept in config rather than hard-coded.
 const GOOGLE_API_KEYS = {
-  docs:   'YOUR_GOOGLE_DOCS_API_KEY',
-  drive:  'YOUR_GOOGLE_DRIVE_API_KEY',
-  picker: 'YOUR_GOOGLE_PICKER_API_KEY'
+  docs:   import.meta.env.VITE_GOOGLE_DOCS_API_KEY   || '',
+  drive:  import.meta.env.VITE_GOOGLE_DRIVE_API_KEY  || '',
+  picker: import.meta.env.VITE_GOOGLE_PICKER_API_KEY || ''
 }
-const GOOGLE_OAUTH_CLIENT_ID = '577644767198-52bej9n54ahh29fi1fgcvd0m6b67inhe.apps.googleusercontent.com'
+const GOOGLE_OAUTH_CLIENT_ID = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/documents'
 
 let gisTokenClient     = null
