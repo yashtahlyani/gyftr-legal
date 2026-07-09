@@ -3,9 +3,11 @@
 const STORAGE_KEY = 'gyftr_openai_key'
 
 export function getStoredKey() {
-  return import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem(STORAGE_KEY) || ''
+  const savedKey = (localStorage.getItem(STORAGE_KEY) || '').trim()
+  if (savedKey) return savedKey
+  return import.meta.env.VITE_OPENAI_API_KEY || ''
 }
-export function saveKey(k) { localStorage.setItem(STORAGE_KEY, k.trim()) }
+export function saveKey(k) { localStorage.setItem(STORAGE_KEY, (k || '').trim()) }
 
 function buildBrief(a) {
   const clauses = (a.clauses || []).filter(c => c.changes && c.changes.some(ch => ch && ch !== 'NA' && ch.trim()))
@@ -55,20 +57,21 @@ Return this exact JSON:
 export async function analyzeWithAI(agreement, apiKey, docText) {
   const key = apiKey || getStoredKey()
   if (!key) throw new Error('no_key')
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  if (!supabaseUrl) throw new Error('Supabase URL is not configured')
+
+  const res = await fetch(`${supabaseUrl}/functions/v1/ai-analyze`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini', temperature: 0.25, max_tokens: 1800,
-      messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: buildUserPrompt(agreement, docText) }]
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ agreement, apiKey: key, docText })
   })
-  if (res.status === 401) throw new Error('invalid_key')
-  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `API error ${res.status}`) }
-  const data = await res.json()
-  const content = data.choices?.[0]?.message?.content || ''
-  try { return JSON.parse(content.replace(/^```(?:json)?\n?/,'').replace(/\n?```$/,'').trim()) }
-  catch { throw new Error('AI returned invalid JSON — try again.') }
+
+  const data = await res.json().catch(() => ({}))
+  if (res.status === 401 || data.error === 'invalid_key') throw new Error('invalid_key')
+  if (!res.ok) throw new Error(data.error || `API error ${res.status}`)
+
+  return data.result
 }
 
 // ── Config ───────────────────────────────────────────────────────────────────
