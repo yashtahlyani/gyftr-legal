@@ -51,7 +51,7 @@
       </div>
       <div class="login-field">
         <label class="login-lbl">Company email</label>
-        <input class="gx-input" type="email" id="loginEmail" value="alex.carter@example.com">
+        <input class="gx-input" type="email" id="loginEmail" value="nitin@gyftr.net">
       </div>
       <div class="login-field" style="margin-bottom:20px">
         <label class="login-lbl">Password</label>
@@ -60,10 +60,11 @@
       <button class="login-cta" onclick="doLogin()">Sign in &rarr;</button>
       <div class="login-divider">or sign in as a role</div>
       <div class="role-grid">
-        <button class="role-pill sel" onclick="pickRole(this,'legal')"><span class="role-name">Alex Carter</span><span class="role-desc">Legal &middot; Full access</span></button>
-        <button class="role-pill" onclick="pickRole(this,'finance')"><span class="role-name">Jordan Lee</span><span class="role-desc">Finance &middot; Review &amp; approve</span></button>
-        <button class="role-pill" onclick="pickRole(this,'business')"><span class="role-name">Sam Rivera</span><span class="role-desc">Business &middot; Review &amp; approve</span></button>
-        <button class="role-pill" onclick="pickRole(this,'compliance')"><span class="role-name">Riley Quinn</span><span class="role-desc">Compliance &middot; Review &amp; approve</span></button>
+        <button class="role-pill sel" onclick="pickRole(this,'legal')"><span class="role-name">Nitin</span><span class="role-desc">Legal &middot; Full access</span></button>
+        <button class="role-pill" onclick="pickRole(this,'finance')"><span class="role-name">Neha</span><span class="role-desc">Finance &middot; Review &amp; approve</span></button>
+        <button class="role-pill" onclick="pickRole(this,'business')"><span class="role-name">Pankaj Mehta</span><span class="role-desc">Business &middot; Review &amp; approve</span></button>
+        <button class="role-pill" onclick="pickRole(this,'compliance')"><span class="role-name">Nikhil</span><span class="role-desc">Compliance &middot; Review &amp; approve</span></button>
+
       </div>
     </div>
   </div>
@@ -88,11 +89,11 @@
     </div>
     <div class="tb-right">
       <div style="text-align:right">
-        <div class="tb-user-name" id="uName">Alex Carter</div>
+        <div class="tb-user-name" id="uName">—</div>
         <div class="tb-user-role" id="uRole">Legal Team</div>
       </div>
       <div class="tb-avatar-wrap">
-        <div class="tb-avatar" id="uAv">NK</div>
+        <div class="tb-avatar" id="uAv">NI</div>
         <div class="av-tooltip" id="avTooltip">Last login: Today, 09:14 AM</div>
       </div>
       <button class="export-btn" onclick="openGlobalSearch()" title="Global search (Cmd+K)">
@@ -643,10 +644,10 @@
 <script>
 /* ════════ DATA ════════ */
 const ROLES={
-  legal:  {name:"Alex Carter", role:"Legal Team",      av:"AC", team:"L", canCreate:true},
-  finance:{name:"Jordan Lee",role:"Finance Team",    av:"JL", team:"F", canCreate:false},
-  business:{name:"Sam Rivera",role:"Business Team",  av:"SR", team:"B", canCreate:false},
-  compliance:{name:"Riley Quinn",role:"Compliance Team",av:"RQ",team:"C",canCreate:false}
+  legal:      {name:"Nitin",        role:"Legal Team",      av:"NI", team:"L", canCreate:true},
+  finance:    {name:"Neha",         role:"Finance Team",    av:"NE", team:"F", canCreate:false},
+  business:   {name:"Pankaj Mehta", role:"Business Team",   av:"PM", team:"B", canCreate:false},
+  compliance: {name:"Nikhil",       role:"Compliance Team", av:"NK", team:"C", canCreate:false}
 };
 
 // teamAging: days each team has been in current status (for display)
@@ -657,8 +658,8 @@ const AGs=[
    teamAging:{L:null,F:"+3d",C:null,B:null},
    ag:"+3d",ac:"ag-warn",lu:"2026-06-05",
    remarks:[
-     {author:"Alex Carter",role:"Legal",ts:"2026-06-01 09:00",txt:"Draft shared with finance team for review."},
-     {author:"Jordan Lee",role:"Finance",ts:"2026-06-05 14:22",txt:"Awaiting clarification on revenue share clause."}
+     {author:"Nitin",role:"Legal",ts:"2026-06-01 09:00",txt:"Draft shared with finance team for review."},
+     {author:"Neha",role:"Finance",ts:"2026-06-05 14:22",txt:"Awaiting clarification on revenue share clause."}
    ],
    doc:"https://docs.google.com/document/d/19GynpWHuPzVZqyQXCIcRkkXCl4Zaji0P/edit",
    sp:{B:"Sam",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-06-10",
@@ -703,7 +704,7 @@ const AGs=[
    ms:{L:"Under Review",F:"Pending",C:"Pending",B:"Pending"},
    teamAging:{L:"+1d",F:null,C:null,B:null},
    ag:"On time",ac:"ag-ok",lu:"2026-05-22",
-   remarks:[{author:"Alex Carter",role:"Legal",ts:"2026-05-22 09:15",txt:"Draft sent for review."}],
+   remarks:[{author:"Nitin",role:"Legal",ts:"2026-05-22 09:15",txt:"Draft sent for review."}],
    doc:"https://docs.google.com/document/d/17-mhtub5pwUDQT__kfNI8e1Liy5Ox9WA/edit",
    sp:{B:"Taylor",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-06-20",
    hist:[
@@ -715,7 +716,7 @@ const AGs=[
    ms:{L:"Approved",F:"Approved",C:"Approved",B:"Approved"},
    teamAging:{L:null,F:null,C:null,B:null},
    ag:"On time",ac:"ag-ok",lu:"2026-06-08",
-   remarks:[{author:"Alex Carter",role:"Legal",ts:"2026-06-08 16:00",txt:"All teams approved. Sent to CEO for final signature."}],
+   remarks:[{author:"Nitin",role:"Legal",ts:"2026-06-08 16:00",txt:"All teams approved. Sent to CEO for final signature."}],
    doc:"https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit",
    sp:{B:"Sam",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-06-15",
    hist:[
@@ -756,8 +757,8 @@ const AGs=[
    teamAging:{L:null,F:"+1d",C:"+2d",B:null},
    ag:"+1d",ac:"ag-warn",lu:"2026-06-04",
    remarks:[
-     {author:"Alex Carter",role:"Legal",ts:"2026-05-28 09:00",txt:"Approved from legal side."},
-     {author:"Riley Quinn",role:"Compliance",ts:"2026-06-04 14:00",txt:"Query on data localisation clause — needs amendment."}
+     {author:"Nitin",role:"Legal",ts:"2026-05-28 09:00",txt:"Approved from legal side."},
+     {author:"Nikhil",role:"Compliance",ts:"2026-06-04 14:00",txt:"Query on data localisation clause — needs amendment."}
    ],
    doc:"https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit",
    sp:{B:"Taylor",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-06-08",
@@ -772,7 +773,7 @@ const AGs=[
    ms:{L:"Approved",F:"Approved",C:"Approved",B:"Approved"},
    teamAging:{L:null,F:null,C:null,B:null},
    ag:"On time",ac:"ag-ok",lu:"2026-05-10",
-   remarks:[{author:"Alex Carter",role:"Legal",ts:"2026-05-10 12:00",txt:"Fully executed. Filing complete."}],
+   remarks:[{author:"Nitin",role:"Legal",ts:"2026-05-10 12:00",txt:"Fully executed. Filing complete."}],
    doc:"https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit",
    sp:{B:"Sam",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-05-15",
    hist:[
@@ -807,8 +808,8 @@ const AGs=[
    teamAging:{L:"+3d",F:"+5d",C:null,B:null},
    ag:"+5d",ac:"ag-over",lu:"2026-06-06",
    remarks:[
-     {author:"Jordan Lee",role:"Finance",ts:"2026-06-06 15:00",txt:"Rejected. Revenue share terms unacceptable — minimum 18% required. Please rework."},
-     {author:"Alex Carter",role:"Legal",ts:"2026-06-07 10:30",txt:"Noted. Reworking clauses 4.2 and 4.3. Revised draft coming shortly."}
+     {author:"Neha",role:"Finance",ts:"2026-06-06 15:00",txt:"Rejected. Revenue share terms unacceptable — minimum 18% required. Please rework."},
+     {author:"Nitin",role:"Legal",ts:"2026-06-07 10:30",txt:"Noted. Reworking clauses 4.2 and 4.3. Revised draft coming shortly."}
    ],
    doc:"https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit",
    sp:{B:"Taylor",L:"Alex",F:"Jordan",C:"Riley"},pd:"2026-05-30",
@@ -907,7 +908,7 @@ function showToast(m,type=""){
 function pickRole(el,k){
   document.querySelectorAll(".role-pill").forEach(b=>b.classList.remove("sel"));
   el.classList.add("sel");selRole=k;
-  const em={legal:"alex.carter@example.com",finance:"jordan.lee@example.com",business:"sam.rivera@example.com",compliance:"riley.quinn@example.com"};
+  const em={legal:"nitin@gyftr.net",finance:"neha@gyftr.net",business:"pankaj.mehta@gyftr.net",compliance:"nikhil@gyftr.net"};
   document.getElementById("loginEmail").value=em[k];
 }
 function doLogin(){

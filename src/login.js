@@ -1,10 +1,10 @@
 import { db } from './lib/supabase.js'
 
-const ROLE_EMAILS = {
-  legal:      'alex.carter@example.com',
-  finance:    'jordan.lee@example.com',
-  business:   'sam.rivera@example.com',
-  compliance: 'riley.quinn@example.com'
+const DEMO_EMAILS = {
+  legal:      'nitin@gyftr.net',
+  finance:    'neha@gyftr.net',
+  business:   'pankaj.mehta@gyftr.net',
+  compliance: 'nikhil@gyftr.net'
 }
 
 const ROLE_LABELS = {
@@ -22,8 +22,8 @@ window.pickRole = function (el, k) {
   selectedRole = k
   const emailEl = document.getElementById('loginEmail')
   const passEl  = document.getElementById('loginPass')
-  if (emailEl) emailEl.value = ROLE_EMAILS[k] || ''
-  if (passEl)  passEl.value  = 'ChangeMe123!'
+  if (emailEl) emailEl.value = DEMO_EMAILS[k] || ''
+  if (passEl)  passEl.value  = 'gyftr@1234'
   clearError()
 }
 
@@ -45,6 +45,13 @@ function clearError() {
   if (el) el.style.display = 'none'
 }
 
+// Enter demo mode — no Supabase needed, matches v9 behaviour
+function enterDemoMode(role) {
+  sessionStorage.setItem('demo_role', role)
+  sessionStorage.removeItem('profile')
+  window.location.href = '/app.html'
+}
+
 window.handleLogin = async function () {
   const btn   = document.getElementById('loginBtn') || document.querySelector('.login-cta')
   const email = document.getElementById('loginEmail')?.value?.trim()
@@ -57,6 +64,14 @@ window.handleLogin = async function () {
     return
   }
 
+  // Demo role pill selected with example.com address → bypass Supabase
+  const demoRole = Object.entries(DEMO_EMAILS).find(([, e]) => e === email)?.[0]
+  if (demoRole) {
+    enterDemoMode(demoRole)
+    return
+  }
+
+  // Real email → try Supabase auth
   if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true }
 
   try {
@@ -72,9 +87,14 @@ window.handleLogin = async function () {
       return
     }
 
-    // Determine role from email
-    const matchedRole = Object.entries(ROLE_EMAILS).find(([, e]) => e === email)?.[0] || selectedRole
-    sessionStorage.setItem('role', matchedRole)
+    // Determine role from profiles table
+    const { data: profile } = await db
+      .from('profiles').select('*').eq('id', data.user.id).single()
+    const matchedRole = profile?.role
+      || Object.entries(DEMO_EMAILS).find(([, e]) => e === email)?.[0]
+      || selectedRole
+
+    sessionStorage.setItem('profile', JSON.stringify(profile || { role: matchedRole }))
     window.location.href = '/app.html'
 
   } catch (err) {
@@ -87,11 +107,10 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter') window.handleLogin()
 })
 
-// Pre-select Legal on load — pill is already .sel from HTML
-// Pre-fill email and password to match
+// Pre-select Legal on load
 ;(function init() {
   const emailEl = document.getElementById('loginEmail')
   const passEl  = document.getElementById('loginPass')
-  if (emailEl && !emailEl.value) emailEl.value = ROLE_EMAILS.legal
-  if (passEl  && !passEl.value)  passEl.value  = 'ChangeMe123!'
+  if (emailEl && !emailEl.value) emailEl.value = DEMO_EMAILS.legal
+  if (passEl  && !passEl.value)  passEl.value  = 'gyftr@1234'
 })()

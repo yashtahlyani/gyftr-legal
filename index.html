@@ -38,75 +38,25 @@
       </div>
       <div class="login-field">
         <label class="login-lbl">Company email</label>
-        <input class="gx-input" type="email" id="loginEmail" value="alex.carter@example.com">
+        <input class="gx-input" type="email" id="loginEmail" value="nitin@gyftr.net">
       </div>
       <div class="login-field" style="margin-bottom:8px">
         <label class="login-lbl">Password</label>
-        <input class="gx-input" type="password" id="loginPass" value="">
+        <input class="gx-input" type="password" id="loginPass" value="gyftr@1234">
       </div>
       <div id="loginError" style="display:none;color:#DC2626;font-size:12.5px;margin-bottom:12px;font-weight:600"></div>
-      <button class="login-cta" id="loginBtn" onclick="handleSignIn()">Sign in &rarr;</button>
+      <button class="login-cta" id="loginBtn" onclick="handleLogin()">Sign in &rarr;</button>
       <div class="login-divider">or sign in as a role</div>
       <div class="role-grid">
-        <button class="role-pill sel" onclick="pickRole(this,'legal')"><span class="role-name">Alex Carter</span><span class="role-desc">Legal &middot; Full access</span></button>
-        <button class="role-pill" onclick="pickRole(this,'finance')"><span class="role-name">Jordan Lee</span><span class="role-desc">Finance &middot; Review &amp; approve</span></button>
-        <button class="role-pill" onclick="pickRole(this,'business')"><span class="role-name">Sam Rivera</span><span class="role-desc">Business &middot; Review &amp; approve</span></button>
-        <button class="role-pill" onclick="pickRole(this,'compliance')"><span class="role-name">Riley Quinn</span><span class="role-desc">Compliance &middot; Review &amp; approve</span></button>
+        <button class="role-pill sel" onclick="pickRole(this,'legal')"><span class="role-name">Nitin</span><span class="role-desc">Legal &middot; Full access</span></button>
+        <button class="role-pill" onclick="pickRole(this,'finance')"><span class="role-name">Neha</span><span class="role-desc">Finance &middot; Review &amp; approve</span></button>
+        <button class="role-pill" onclick="pickRole(this,'business')"><span class="role-name">Pankaj Mehta</span><span class="role-desc">Business &middot; Review &amp; approve</span></button>
+        <button class="role-pill" onclick="pickRole(this,'compliance')"><span class="role-name">Nikhil</span><span class="role-desc">Compliance &middot; Review &amp; approve</span></button>
       </div>
     </div>
   </div>
 </div>
 
-<script type="module">
-  import { signIn } from '/src/auth/login.js'
-
-  let selectedRole = 'legal'
-
-  window.pickRole = function (el, k) {
-    document.querySelectorAll('.role-pill').forEach(b => b.classList.remove('sel'))
-    el.classList.add('sel')
-    selectedRole = k
-    const emails = {
-      legal:      'alex.carter@example.com',
-      finance:    'jordan.lee@example.com',
-      business:   'sam.rivera@example.com',
-      compliance: 'riley.quinn@example.com'
-    }
-    const emailEl = document.getElementById('loginEmail')
-    if (emailEl) emailEl.value = emails[k]
-  }
-
-  window.handleSignIn = async function () {
-    const btn = document.getElementById('loginBtn')
-    const errorEl = document.getElementById('loginError')
-    const email = document.getElementById('loginEmail')?.value?.trim()
-    const password = document.getElementById('loginPass')?.value
-
-    errorEl.style.display = 'none'
-
-    if (!email || !password) {
-      errorEl.textContent = 'Enter both email and password.'
-      errorEl.style.display = 'block'
-      return
-    }
-
-    btn.textContent = 'Signing in…'
-    btn.disabled = true
-
-    try {
-      await signIn(email, password)
-      window.location.href = '/app.html'
-    } catch (err) {
-      btn.textContent = 'Sign in →'
-      btn.disabled = false
-      errorEl.textContent = 'Invalid email or password.'
-      errorEl.style.display = 'block'
-    }
-  }
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Enter') window.handleSignIn()
-  })
-</script>
+<script type="module" src="/src/login.js"></script>
 </body>
 </html>

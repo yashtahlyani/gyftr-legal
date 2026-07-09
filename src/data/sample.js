@@ -1,9 +1,9 @@
 // ─── SAMPLE DATA — Based on real GyfTR agreement templates ────────────────────
 export const ROLES = {
-  legal:      { name:'Alex Carter',  role:'Legal Team',      av:'AC', team:'L', canCreate:true },
-  finance:    { name:'Jordan Lee', role:'Finance Team',    av:'JL', team:'F', canCreate:false },
-  business:   { name:'Sam Rivera', role:'Business Team',   av:'SR', team:'B', canCreate:false },
-  compliance: { name:'Riley Quinn', role:'Compliance Team', av:'RQ', team:'C', canCreate:false }
+  legal:      { name:'Nitin',        role:'Legal Team',      av:'NI', team:'L', canCreate:true },
+  finance:    { name:'Neha',         role:'Finance Team',    av:'NE', team:'F', canCreate:false },
+  business:   { name:'Pankaj Mehta', role:'Business Team',   av:'PM', team:'B', canCreate:false },
+  compliance: { name:'Nikhil',       role:'Compliance Team', av:'NK', team:'C', canCreate:false }
 }
 
 export let AGs = [
@@ -16,20 +16,20 @@ export let AGs = [
     ms:{L:'Approved',F:'Under Review',C:'Pending',B:'Approved'},
     teamAging:{L:null,F:'+3d',C:null,B:null},
     ag:'+3d', ac:'ag-warn', lu:'2026-06-10',
-    sp:{L:'Alex Carter',F:'Jordan Lee',C:'Riley Quinn',B:'Sam Rivera'},
+    sp:{L:'Nitin',F:'Neha',C:'Nikhil',B:'Pankaj Mehta'},
     pd:'2026-07-01',
     clientDates:{draftStart:'2026-01-10',latestModified:'2026-06-04',effectiveDate:'2026-07-01',signingDate:'',endDate:'2027-01-09'},
     doc:'https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit',
     remarks:[
-      {author:'Alex Carter',role:'Legal',ts:'2026-05-15 10:00',txt:'D1 sent — standard E2E Buy & Sell template used. Revenue share at 15% as per business approval.'},
-      {author:'Sam Rivera',role:'Business',ts:'2026-05-20 14:30',txt:'Meridian confirmed interest. Client wants payment cycle changed from 30 to 45 days.'},
-      {author:'Jordan Lee',role:'Finance',ts:'2026-06-10 11:00',txt:'45-day payment cycle acceptable but need prefunded advance account clause confirmed. Awaiting Legal to revise Annexure A.'}
+      {author:'Nitin',role:'Legal',ts:'2026-05-15 10:00',txt:'D1 sent — standard E2E Buy & Sell template used. Revenue share at 15% as per business approval.'},
+      {author:'Pankaj Mehta',role:'Business',ts:'2026-05-20 14:30',txt:'Meridian confirmed interest. Client wants payment cycle changed from 30 to 45 days.'},
+      {author:'Neha',role:'Finance',ts:'2026-06-10 11:00',txt:'45-day payment cycle acceptable but need prefunded advance account clause confirmed. Awaiting Legal to revise Annexure A.'}
     ],
     hist:[
-      {d:'2026-01-10 10:00',t:'Legal',b:'Alex Carter',f:'—',to:'Pending'},
-      {d:'2026-05-15 10:00',t:'Legal',b:'Alex Carter',f:'Pending',to:'Approved'},
-      {d:'2026-05-18 09:00',t:'Business',b:'Sam Rivera',f:'Pending',to:'Approved'},
-      {d:'2026-06-10 11:00',t:'Finance',b:'Jordan Lee',f:'Pending',to:'Under Review'}
+      {d:'2026-01-10 10:00',t:'Legal',b:'Nitin',f:'—',to:'Pending'},
+      {d:'2026-05-15 10:00',t:'Legal',b:'Nitin',f:'Pending',to:'Approved'},
+      {d:'2026-05-18 09:00',t:'Business',b:'Pankaj Mehta',f:'Pending',to:'Approved'},
+      {d:'2026-06-10 11:00',t:'Finance',b:'Neha',f:'Pending',to:'Under Review'}
     ],
     drafts:[
       {n:'D1',date:'2026-01-15',dir:'sent',note:'Initial draft — GyfTR standard E2E Buy & Sell template. Revenue share 15%, 30-day payment cycle, 12-month term.'},
@@ -90,10 +90,10 @@ export let AGs = [
       }
     ],
     _docComments:[
-      {id:'cmt-mfl-1',quote:'Client to pay Consideration within 45 days of invoice date. Prefunded advance account to be maintained.',author:'Jordan Lee',role:'Finance Team',team:'F',avatar:'JL',ts:'4 Jun, 11:30',text:'The 45-day cycle is approved by Finance. However, Annexure A must be updated to formally capture the Rs 5L prefunded balance requirement — without this it remains an oral commitment only and cannot be enforced if the client defaults.',resolved:false,replies:[{author:'Alex Carter',role:'Legal Team',team:'L',avatar:'AC',ts:'4 Jun, 14:15',body:'Noted — I will revise Annexure A this week to include the prefund clause explicitly. Will circulate draft by Friday EOD for Finance sign-off before we send D5.'}]},
-      {id:'cmt-mfl-2',quote:'Liability of GyfTR capped at Consideration paid during 4 months prior to the date of claim.',author:'Alex Carter',role:'Legal Team',team:'L',avatar:'AC',ts:'5 Jun, 09:45',text:'The 4-month cap is a step up from our standard 3-month. Based on current fee run-rate (~Rs 3L/month), maximum exposure is Rs 12L. Finance please confirm this is within acceptable risk bounds.',resolved:false,replies:[{author:'Jordan Lee',role:'Finance Team',team:'F',avatar:'JL',ts:'5 Jun, 11:00',body:'Finance reviewed — Rs 12L exposure at current run-rate is within acceptable risk limits. Approved. Proceed with 4-month cap.'},{author:'Sam Rivera',role:'Business Team',team:'B',avatar:'SR',ts:'5 Jun, 13:30',body:'Business also aligned. Meridian is a strategic account — this is a reasonable concession to close the deal.'}]},
-      {id:'cmt-mfl-3',quote:'GyfTR shall share KYC-compliant merchant list to the Client on a quarterly basis.',author:'Riley Quinn',role:'Compliance Team',team:'C',avatar:'RQ',ts:'6 Jun, 10:20',text:"Compliance reviewed this obligation. The quarterly merchant list must follow RBI's updated PPI guidelines (Circular DPSS.CO.PD No. 1022, 2026). Ensure list format and data fields are aligned before the first quarterly submission.",resolved:false,replies:[]},
-      {id:'cmt-mfl-4',quote:'Non-solicitation period: 12 months post termination. Client shall not approach GyfTR merchants directly.',author:'Sam Rivera',role:'Business Team',team:'B',avatar:'SR',ts:'7 Jun, 16:00',text:'Business fully supports the 12-month non-solicitation. Meridian has shown interest in directly onboarding 2-3 of our merchant partners — this clause is critical protection.',resolved:true,replies:[{author:'Alex Carter',role:'Legal Team',team:'L',avatar:'AC',ts:'7 Jun, 16:45',body:'Agreed. Clause held firm in D3, accepted by Meridian in D4. Marking resolved.'}]}
+      {id:'cmt-mfl-1',quote:'Client to pay Consideration within 45 days of invoice date. Prefunded advance account to be maintained.',author:'Neha',role:'Finance Team',team:'F',avatar:'NE',ts:'4 Jun, 11:30',text:'The 45-day cycle is approved by Finance. However, Annexure A must be updated to formally capture the Rs 5L prefunded balance requirement — without this it remains an oral commitment only and cannot be enforced if the client defaults.',resolved:false,replies:[{author:'Nitin',role:'Legal Team',team:'L',avatar:'NI',ts:'4 Jun, 14:15',body:'Noted — I will revise Annexure A this week to include the prefund clause explicitly. Will circulate draft by Friday EOD for Finance sign-off before we send D5.'}]},
+      {id:'cmt-mfl-2',quote:'Liability of GyfTR capped at Consideration paid during 4 months prior to the date of claim.',author:'Nitin',role:'Legal Team',team:'L',avatar:'NI',ts:'5 Jun, 09:45',text:'The 4-month cap is a step up from our standard 3-month. Based on current fee run-rate (~Rs 3L/month), maximum exposure is Rs 12L. Finance please confirm this is within acceptable risk bounds.',resolved:false,replies:[{author:'Neha',role:'Finance Team',team:'F',avatar:'NE',ts:'5 Jun, 11:00',body:'Finance reviewed — Rs 12L exposure at current run-rate is within acceptable risk limits. Approved. Proceed with 4-month cap.'},{author:'Pankaj Mehta',role:'Business Team',team:'B',avatar:'PM',ts:'5 Jun, 13:30',body:'Business also aligned. Meridian is a strategic account — this is a reasonable concession to close the deal.'}]},
+      {id:'cmt-mfl-3',quote:'GyfTR shall share KYC-compliant merchant list to the Client on a quarterly basis.',author:'Nikhil',role:'Compliance Team',team:'C',avatar:'NK',ts:'6 Jun, 10:20',text:"Compliance reviewed this obligation. The quarterly merchant list must follow RBI's updated PPI guidelines (Circular DPSS.CO.PD No. 1022, 2026). Ensure list format and data fields are aligned before the first quarterly submission.",resolved:false,replies:[]},
+      {id:'cmt-mfl-4',quote:'Non-solicitation period: 12 months post termination. Client shall not approach GyfTR merchants directly.',author:'Pankaj Mehta',role:'Business Team',team:'B',avatar:'PM',ts:'7 Jun, 16:00',text:'Business fully supports the 12-month non-solicitation. Meridian has shown interest in directly onboarding 2-3 of our merchant partners — this clause is critical protection.',resolved:true,replies:[{author:'Nitin',role:'Legal Team',team:'L',avatar:'NI',ts:'7 Jun, 16:45',body:'Agreed. Clause held firm in D3, accepted by Meridian in D4. Marking resolved.'}]}
     ],
     _aiAnalysis:{
       riskScore:45,riskLevel:"medium",dealHealth:"caution",
@@ -116,20 +116,20 @@ export let AGs = [
     ms:{L:'Under Review',F:'Under Review',C:'Pending',B:'Approved'},
     teamAging:{L:'+2d',F:'+1d',C:null,B:null},
     ag:'+2d', ac:'ag-warn', lu:'2026-06-08',
-    sp:{L:'Alex Carter',F:'Jordan Lee',C:'Riley Quinn',B:'Sam Rivera'},
+    sp:{L:'Nitin',F:'Neha',C:'Nikhil',B:'Pankaj Mehta'},
     pd:'2026-06-30',
     clientDates:{draftStart:'2026-03-05',latestModified:'2026-06-01',effectiveDate:'2026-07-01',signingDate:'',endDate:'2027-03-04'},
     doc:'https://docs.google.com/document/d/19GynpWHuPzVZqyQXCIcRkkXCl4Zaji0P/edit',
     remarks:[
-      {author:'Alex Carter',role:'Legal',ts:'2026-03-10 09:00',txt:'API template sent. Key additions vs E2E: Proprietary Software clause, API uptime SLA, data security obligations.'},
-      {author:'Sam Rivera',role:'Business',ts:'2026-04-05 15:00',txt:'Meridian happy with API access. Dispute on uptime SLA — they want 99.9%, we offered 99.5%.'},
-      {author:'Jordan Lee',role:'Finance',ts:'2026-06-08 10:30',txt:'Revenue share model needs clarification. Is it on MRP or selling price? Need Legal to specify in Annexure A clearly.'}
+      {author:'Nitin',role:'Legal',ts:'2026-03-10 09:00',txt:'API template sent. Key additions vs E2E: Proprietary Software clause, API uptime SLA, data security obligations.'},
+      {author:'Pankaj Mehta',role:'Business',ts:'2026-04-05 15:00',txt:'Meridian happy with API access. Dispute on uptime SLA — they want 99.9%, we offered 99.5%.'},
+      {author:'Neha',role:'Finance',ts:'2026-06-08 10:30',txt:'Revenue share model needs clarification. Is it on MRP or selling price? Need Legal to specify in Annexure A clearly.'}
     ],
     hist:[
-      {d:'2026-03-05 09:00',t:'Legal',b:'Alex Carter',f:'—',to:'Pending'},
-      {d:'2026-03-10 09:00',t:'Legal',b:'Alex Carter',f:'Pending',to:'Under Review'},
-      {d:'2026-04-02 10:00',t:'Business',b:'Sam Rivera',f:'Pending',to:'Approved'},
-      {d:'2026-06-08 10:30',t:'Finance',b:'Jordan Lee',f:'Pending',to:'Under Review'}
+      {d:'2026-03-05 09:00',t:'Legal',b:'Nitin',f:'—',to:'Pending'},
+      {d:'2026-03-10 09:00',t:'Legal',b:'Nitin',f:'Pending',to:'Under Review'},
+      {d:'2026-04-02 10:00',t:'Business',b:'Pankaj Mehta',f:'Pending',to:'Approved'},
+      {d:'2026-06-08 10:30',t:'Finance',b:'Neha',f:'Pending',to:'Under Review'}
     ],
     drafts:[
       {n:'D1',date:'2026-03-10',dir:'sent',note:'Initial draft — API integration template. Includes Proprietary Software clause (Cl.3), API SLA at 99.5% uptime, 30-day payment cycle.'},
@@ -201,10 +201,10 @@ export let AGs = [
       ]
     },
     _docComments:[
-      {id:'cmt-api-1',quote:'GyfTR agreed to implement 2FA within 60 days of signing.',author:'Riley Quinn',role:'Compliance Team',team:'C',avatar:'RQ',ts:'10 Jun, 10:05',text:'From a compliance standpoint, 60 days is on the longer end for a security commitment of this nature. CERT-In guidelines recommend MFA deployment within 30 days for platforms handling financial data. Recommend pushing back to 45 days max.',resolved:false,replies:[{author:'Alex Carter',role:'Legal Team',team:'L',avatar:'AC',ts:'10 Jun, 11:30',body:'Good catch. I will propose 45-day timeline in the next revision. Will update Cl.3 before sending D5.'}]},
-      {id:'cmt-api-2',quote:'99.7% uptime SLA, a 4-hour P1 resolution window, and a 5% credit per breach capped at 15% per quarter.',author:'Jordan Lee',role:'Finance Team',team:'F',avatar:'JL',ts:'11 Jun, 09:20',text:'Finance concern: the 5% credit cap per breach translates to approximately Rs 15K per quarter at current revenue run-rate. This is too low to be a meaningful deterrent for Meridian. They may accept now but escalate if an outage impacts their business. Suggest we move credit to 10% per breach.',resolved:false,replies:[{author:'Sam Rivera',role:'Business Team',team:'B',avatar:'SR',ts:'11 Jun, 14:00',body:'Agreed with Finance. Meridian is a high-volume API client — downtime directly impacts their ability to disburse GVs to employees. 10% credit per breach is more appropriate for this SLA tier.'},{author:'Alex Carter',role:'Legal Team',team:'L',avatar:'AC',ts:'11 Jun, 16:45',body:'Noted both inputs. Will revise credit to 8% per breach (compromise) and increase quarterly cap to 20%. This aligns us closer to market and reduces escalation risk.'}]},
-      {id:'cmt-api-3',quote:'Client demands unlimited liability for data breaches, citing concerns over potential exposure under the IT Act.',author:'Alex Carter',role:'Legal Team',team:'L',avatar:'AC',ts:'12 Jun, 08:50',text:'This is the most critical open point in this agreement. Unlimited liability for data breach is a non-starter — GyfTR cannot accept. However, the client has valid concerns under the DPDP Act 2023 (Digital Personal Data Protection Act). Compliance to assess what a defensible cap looks like given our ISO 27001 certification plan.',resolved:false,replies:[{author:'Riley Quinn',role:'Compliance Team',team:'C',avatar:'RQ',ts:'12 Jun, 10:15',body:'Compliance position: 12-month cap on data breach liability is reasonable given our PCI-DSS compliance and upcoming ISO 27001 audit. We can offer a 24-month cap ONLY if Meridian agrees to a cybersecurity audit clause and incident response SLA. Do not agree to 24 months without these conditions.'}]},
-      {id:'cmt-api-4',quote:'Revenue share model needs clarification. Is it on MRP or selling price?',author:'Jordan Lee',role:'Finance Team',team:'F',avatar:'JL',ts:'13 Jun, 11:00',text:'This ambiguity in Annexure A must be resolved before signing. MRP vs selling price can create a 3–8% variance on high-denomination GVs. At projected GMV of Rs 2Cr, that is a Rs 6L–16L revenue impact per year. Finance requires this to be explicitly stated as selling price (net of discount).',resolved:true,replies:[{author:'Alex Carter',role:'Legal Team',team:'L',avatar:'AC',ts:'13 Jun, 15:30',body:'Resolved. Annexure A updated in D4: revenue share is on selling price net of agreed client discount. Language confirmed by Finance. Marking resolved.'}]}
+      {id:'cmt-api-1',quote:'GyfTR agreed to implement 2FA within 60 days of signing.',author:'Nikhil',role:'Compliance Team',team:'C',avatar:'NK',ts:'10 Jun, 10:05',text:'From a compliance standpoint, 60 days is on the longer end for a security commitment of this nature. CERT-In guidelines recommend MFA deployment within 30 days for platforms handling financial data. Recommend pushing back to 45 days max.',resolved:false,replies:[{author:'Nitin',role:'Legal Team',team:'L',avatar:'NI',ts:'10 Jun, 11:30',body:'Good catch. I will propose 45-day timeline in the next revision. Will update Cl.3 before sending D5.'}]},
+      {id:'cmt-api-2',quote:'99.7% uptime SLA, a 4-hour P1 resolution window, and a 5% credit per breach capped at 15% per quarter.',author:'Neha',role:'Finance Team',team:'F',avatar:'NE',ts:'11 Jun, 09:20',text:'Finance concern: the 5% credit cap per breach translates to approximately Rs 15K per quarter at current revenue run-rate. This is too low to be a meaningful deterrent for Meridian. They may accept now but escalate if an outage impacts their business. Suggest we move credit to 10% per breach.',resolved:false,replies:[{author:'Pankaj Mehta',role:'Business Team',team:'B',avatar:'PM',ts:'11 Jun, 14:00',body:'Agreed with Finance. Meridian is a high-volume API client — downtime directly impacts their ability to disburse GVs to employees. 10% credit per breach is more appropriate for this SLA tier.'},{author:'Nitin',role:'Legal Team',team:'L',avatar:'NI',ts:'11 Jun, 16:45',body:'Noted both inputs. Will revise credit to 8% per breach (compromise) and increase quarterly cap to 20%. This aligns us closer to market and reduces escalation risk.'}]},
+      {id:'cmt-api-3',quote:'Client demands unlimited liability for data breaches, citing concerns over potential exposure under the IT Act.',author:'Nitin',role:'Legal Team',team:'L',avatar:'NI',ts:'12 Jun, 08:50',text:'This is the most critical open point in this agreement. Unlimited liability for data breach is a non-starter — GyfTR cannot accept. However, the client has valid concerns under the DPDP Act 2023 (Digital Personal Data Protection Act). Compliance to assess what a defensible cap looks like given our ISO 27001 certification plan.',resolved:false,replies:[{author:'Nikhil',role:'Compliance Team',team:'C',avatar:'NK',ts:'12 Jun, 10:15',body:'Compliance position: 12-month cap on data breach liability is reasonable given our PCI-DSS compliance and upcoming ISO 27001 audit. We can offer a 24-month cap ONLY if Meridian agrees to a cybersecurity audit clause and incident response SLA. Do not agree to 24 months without these conditions.'}]},
+      {id:'cmt-api-4',quote:'Revenue share model needs clarification. Is it on MRP or selling price?',author:'Neha',role:'Finance Team',team:'F',avatar:'NE',ts:'13 Jun, 11:00',text:'This ambiguity in Annexure A must be resolved before signing. MRP vs selling price can create a 3–8% variance on high-denomination GVs. At projected GMV of Rs 2Cr, that is a Rs 6L–16L revenue impact per year. Finance requires this to be explicitly stated as selling price (net of discount).',resolved:true,replies:[{author:'Nitin',role:'Legal Team',team:'L',avatar:'NI',ts:'13 Jun, 15:30',body:'Resolved. Annexure A updated in D4: revenue share is on selling price net of agreed client discount. Language confirmed by Finance. Marking resolved.'}]}
     ]
   },
 
@@ -216,18 +216,18 @@ export let AGs = [
     ms:{L:'Under Review',F:'Pending',C:'Pending',B:'Pending'},
     teamAging:{L:'+1d',F:null,C:null,B:null},
     ag:'On time', ac:'ag-ok', lu:'2026-06-01',
-    sp:{L:'Alex Carter',F:'Jordan Lee',C:'Riley Quinn',B:'Sam Rivera'},
+    sp:{L:'Nitin',F:'Neha',C:'Nikhil',B:'Pankaj Mehta'},
     pd:'2026-07-15',
     clientDates:{draftStart:'2026-04-01',latestModified:'2026-06-01',effectiveDate:'2026-08-01',signingDate:'',endDate:'2027-07-31'},
     doc:'https://docs.google.com/document/d/17-mhtub5pwUDQT__kfNI8e1Liy5Ox9WA/edit',
     remarks:[
-      {author:'Alex Carter',role:'Legal',ts:'2026-04-05 09:00',txt:'WL template sent. This is more complex — includes WhiteLabel website development, payment gateway, API, and direct sending module. All 4 fulfilment methods included.'},
-      {author:'Sam Rivera',role:'Business',ts:'2026-04-10 11:00',txt:'Ironclad is for channel incentivization. Large deal — ~Rs 2Cr annual GMV expected. Client wants custom branding on WL site.'},
-      {author:'Alex Carter',role:'Legal',ts:'2026-06-01 14:00',txt:'D1 sent. Awaiting client response. Remind in 7 days if no reply.'}
+      {author:'Nitin',role:'Legal',ts:'2026-04-05 09:00',txt:'WL template sent. This is more complex — includes WhiteLabel website development, payment gateway, API, and direct sending module. All 4 fulfilment methods included.'},
+      {author:'Pankaj Mehta',role:'Business',ts:'2026-04-10 11:00',txt:'Ironclad is for channel incentivization. Large deal — ~Rs 2Cr annual GMV expected. Client wants custom branding on WL site.'},
+      {author:'Nitin',role:'Legal',ts:'2026-06-01 14:00',txt:'D1 sent. Awaiting client response. Remind in 7 days if no reply.'}
     ],
     hist:[
-      {d:'2026-04-01 09:00',t:'Legal',b:'Alex Carter',f:'—',to:'Pending'},
-      {d:'2026-06-01 14:00',t:'Legal',b:'Alex Carter',f:'Pending',to:'Under Review'}
+      {d:'2026-04-01 09:00',t:'Legal',b:'Nitin',f:'—',to:'Pending'},
+      {d:'2026-06-01 14:00',t:'Legal',b:'Nitin',f:'Pending',to:'Under Review'}
     ],
     drafts:[
       {n:'D1',date:'2026-06-01',dir:'sent',note:'Initial White Label draft sent — includes WL website development (Annexure C), payment gateway integration, API access, direct sending module, and channel incentivization terms.'}
@@ -265,19 +265,19 @@ export let AGs = [
     ms:{L:'Approved',F:'Under Review',C:'Pending',B:'Approved'},
     teamAging:{L:null,F:'+3d',C:null,B:null},
     ag:'+3d', ac:'ag-warn', lu:'2026-06-05',
-    sp:{L:'Alex Carter',F:'Jordan Lee',C:'Riley Quinn',B:'Sam Rivera'},
+    sp:{L:'Nitin',F:'Neha',C:'Nikhil',B:'Pankaj Mehta'},
     pd:'2026-07-01',
     clientDates:{draftStart:'2026-05-12',latestModified:'2026-06-04',effectiveDate:'2026-07-01',signingDate:'',endDate:'2027-05-11'},
     doc:null,
     remarks:[
-      {author:'Alex Carter',role:'Legal',ts:'2026-06-01 09:00',txt:'Draft shared with finance team for review.'},
-      {author:'Jordan Lee',role:'Finance',ts:'2026-06-05 14:22',txt:'Awaiting clarification on revenue share clause — is the 17% on MRP or selling price?'}
+      {author:'Nitin',role:'Legal',ts:'2026-06-01 09:00',txt:'Draft shared with finance team for review.'},
+      {author:'Neha',role:'Finance',ts:'2026-06-05 14:22',txt:'Awaiting clarification on revenue share clause — is the 17% on MRP or selling price?'}
     ],
     hist:[
-      {d:'2026-05-12 11:30',t:'Legal',b:'Alex Carter',f:'—',to:'Pending'},
-      {d:'2026-06-01 09:00',t:'Legal',b:'Alex Carter',f:'Pending',to:'Approved'},
-      {d:'2026-06-03 10:05',t:'Business',b:'Sam Rivera',f:'Pending',to:'Approved'},
-      {d:'2026-06-05 14:22',t:'Finance',b:'Jordan Lee',f:'Pending',to:'Under Review'}
+      {d:'2026-05-12 11:30',t:'Legal',b:'Nitin',f:'—',to:'Pending'},
+      {d:'2026-06-01 09:00',t:'Legal',b:'Nitin',f:'Pending',to:'Approved'},
+      {d:'2026-06-03 10:05',t:'Business',b:'Pankaj Mehta',f:'Pending',to:'Approved'},
+      {d:'2026-06-05 14:22',t:'Finance',b:'Neha',f:'Pending',to:'Under Review'}
     ],
     drafts:[
       {n:'D1',date:'2026-05-14',dir:'sent',note:'Initial draft sent to Summit Life. Standard API template. Revenue share 17%.'},
@@ -337,18 +337,18 @@ export let AGs = [
     ms:{L:'Approved',F:'Approved',C:'Approved',B:'Approved'},
     teamAging:{L:null,F:null,C:null,B:null},
     ag:'On time', ac:'ag-ok', lu:'2026-04-10',
-    sp:{L:'Alex Carter',F:'Jordan Lee',C:'Riley Quinn',B:'Sam Rivera'},
+    sp:{L:'Nitin',F:'Neha',C:'Nikhil',B:'Pankaj Mehta'},
     pd:'2026-04-01',
     clientDates:{draftStart:'2026-01-05',latestModified:'2026-04-01',effectiveDate:'2026-05-01',signingDate:'2026-04-10',endDate:'2027-04-30'},
     doc:null,
-    remarks:[{author:'Alex Carter',role:'Legal',ts:'2026-04-10 12:00',txt:'Fully executed. Signed copies filed. Agreement live from 1 May 2026.'}],
+    remarks:[{author:'Nitin',role:'Legal',ts:'2026-04-10 12:00',txt:'Fully executed. Signed copies filed. Agreement live from 1 May 2026.'}],
     hist:[
-      {d:'2026-01-05 09:00',t:'Legal',b:'Alex Carter',f:'—',to:'Pending'},
-      {d:'2026-02-10 10:00',t:'Legal',b:'Alex Carter',f:'Pending',to:'Approved'},
-      {d:'2026-02-15 11:00',t:'Business',b:'Sam Rivera',f:'Pending',to:'Approved'},
-      {d:'2026-03-01 09:00',t:'Finance',b:'Jordan Lee',f:'Under Review',to:'Approved'},
-      {d:'2026-03-10 14:00',t:'Compliance',b:'Riley Quinn',f:'Under Review',to:'Approved'},
-      {d:'2026-04-10 12:00',t:'Legal',b:'Alex Carter',f:'Final Sign',to:'Closed'}
+      {d:'2026-01-05 09:00',t:'Legal',b:'Nitin',f:'—',to:'Pending'},
+      {d:'2026-02-10 10:00',t:'Legal',b:'Nitin',f:'Pending',to:'Approved'},
+      {d:'2026-02-15 11:00',t:'Business',b:'Pankaj Mehta',f:'Pending',to:'Approved'},
+      {d:'2026-03-01 09:00',t:'Finance',b:'Neha',f:'Under Review',to:'Approved'},
+      {d:'2026-03-10 14:00',t:'Compliance',b:'Nikhil',f:'Under Review',to:'Approved'},
+      {d:'2026-04-10 12:00',t:'Legal',b:'Nitin',f:'Final Sign',to:'Closed'}
     ],
     drafts:[
       {n:'D1',date:'2026-01-10',dir:'sent',note:'Initial draft sent'},
@@ -370,19 +370,19 @@ export let AGs = [
     ms:{L:'Under Review',F:'Pending',C:'Pending',B:'Approved'},
     teamAging:{L:'+3d',F:'+5d',C:null,B:null},
     ag:'+5d', ac:'ag-over', lu:'2026-06-06',
-    sp:{L:'Alex Carter',F:'Jordan Lee',C:'Riley Quinn',B:'Sam Rivera'},
+    sp:{L:'Nitin',F:'Neha',C:'Nikhil',B:'Pankaj Mehta'},
     pd:'2026-05-30',
     clientDates:{draftStart:'2026-02-01',latestModified:'2026-06-06',effectiveDate:'',signingDate:'',endDate:''},
     doc:null,
     remarks:[
-      {author:'Jordan Lee',role:'Finance',ts:'2026-06-06 15:00',txt:'Rejected. Revenue share of 17% is below our minimum threshold of 18% for resellers. Please rework Annexure A and resubmit.'},
-      {author:'Alex Carter',role:'Legal',ts:'2026-06-07 10:30',txt:'Noted. Will rework clauses 5 and Annexure A. New draft by June 15.'}
+      {author:'Neha',role:'Finance',ts:'2026-06-06 15:00',txt:'Rejected. Revenue share of 17% is below our minimum threshold of 18% for resellers. Please rework Annexure A and resubmit.'},
+      {author:'Nitin',role:'Legal',ts:'2026-06-07 10:30',txt:'Noted. Will rework clauses 5 and Annexure A. New draft by June 15.'}
     ],
     hist:[
-      {d:'2026-02-01 11:00',t:'Legal',b:'Alex Carter',f:'—',to:'Pending'},
-      {d:'2026-03-10 09:00',t:'Business',b:'Sam Rivera',f:'Pending',to:'Approved'},
-      {d:'2026-04-20 10:00',t:'Finance',b:'Jordan Lee',f:'Under Review',to:'Approved'},
-      {d:'2026-06-06 15:00',t:'Finance',b:'Jordan Lee',f:'Approved',to:'Rejected'}
+      {d:'2026-02-01 11:00',t:'Legal',b:'Nitin',f:'—',to:'Pending'},
+      {d:'2026-03-10 09:00',t:'Business',b:'Pankaj Mehta',f:'Pending',to:'Approved'},
+      {d:'2026-04-20 10:00',t:'Finance',b:'Neha',f:'Under Review',to:'Approved'},
+      {d:'2026-06-06 15:00',t:'Finance',b:'Neha',f:'Approved',to:'Rejected'}
     ],
     drafts:[
       {n:'D1',date:'2026-02-05',dir:'sent',note:'Initial reseller draft. Revenue share 17%. Non-solicitation 12 months. Payment cycle 30 days.'},
