@@ -58,10 +58,7 @@ export async function analyzeWithAI(agreement, apiKey, docText) {
   const key = apiKey || getStoredKey()
   if (!key) throw new Error('no_key')
 
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  if (!supabaseUrl) throw new Error('Supabase URL is not configured')
-
-  const res = await fetch(`${supabaseUrl}/functions/v1/ai-analyze`, {
+  const res = await fetch('/api/ai-analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ agreement, apiKey: key, docText })
