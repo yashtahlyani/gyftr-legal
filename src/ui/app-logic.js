@@ -2494,9 +2494,9 @@ function renderAnContent(a,drafts,clauses){
     wrap.innerHTML=`<div class="an-compare-wrap">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line)">
         <span style="font-size:13px;font-weight:700;color:var(--ink)">Compare</span>
-        <select class="an-draft-sel" onchange="anDraftA=+this.value;renderAnContent(AGs.find(x=>x.id===anSelId),AGs.find(x=>x.id===anSelId).drafts,AGs.find(x=>x.id===anSelId).clauses)">${dOpts.replace(`value="${da}"`,`value="${da}" selected`)}</select>
+        <select class="an-draft-sel" onchange="anSetCompareA(this.value)">${dOpts.replace(`value="${da}"`,`value="${da}" selected`)}</select>
         <span class="an-vs">vs</span>
-        <select class="an-draft-sel" onchange="anDraftB=+this.value;renderAnContent(AGs.find(x=>x.id===anSelId),AGs.find(x=>x.id===anSelId).drafts,AGs.find(x=>x.id===anSelId).clauses)">${dOpts.replace(`value="${db}"`,`value="${db}" selected`)}</select>
+        <select class="an-draft-sel" onchange="anSetCompareB(this.value)">${dOpts.replace(`value="${db}"`,`value="${db}" selected`)}</select>
         <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <span style="font-size:12px;font-weight:700;color:#D97706;background:#FFFBEB;padding:3px 10px;border-radius:7px">${nActualChanged} clause${nActualChanged!==1?"s":""} differ</span>
           <span style="font-size:11px;color:var(--ink-soft)"><span class="an-changed-line" style="font-size:11px">Old</span> → <span class="an-new-line" style="font-size:11px">New (changed words lit)</span></span>
@@ -2521,6 +2521,17 @@ function toggleAnExpand(id,btn){
   btn.textContent=el.classList.contains("vis")?"▾ Collapse":"▸ Expand";
 }
 
+
+function anSetCompareA(val){
+  anDraftA=+val;
+  const a=AGs.find(x=>x.id===anSelId);
+  if(a)renderAnContent(a,a.drafts,a.clauses);
+}
+function anSetCompareB(val){
+  anDraftB=+val;
+  const a=AGs.find(x=>x.id===anSelId);
+  if(a)renderAnContent(a,a.drafts,a.clauses);
+}
 
 /* ════════ EXPOSE ALL FUNCTIONS TO WINDOW ════════ */
 // Required because HTML uses inline onclick="functionName()" handlers
@@ -2557,7 +2568,7 @@ Object.assign(window, {
   openAnalyse, closeAnalyse, anGoBack, anSetMode,
   selectAnAgreement, renderAnCardGrid, filterAnList,
   renderAnMain, renderAnContent, setAnOutcomeFilter,
-  setClauseOutcome, toggleAnExpand,
+  setClauseOutcome, toggleAnExpand, anSetCompareA, anSetCompareB,
   // Global search
   openGlobalSearch, closeGlobalSearch, runGlobalSearch,
   // Export
