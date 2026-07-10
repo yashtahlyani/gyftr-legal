@@ -202,8 +202,9 @@ create policy "Authenticated read" on storage.objects for select
 -- (run after creating users in Auth dashboard — replace UUIDs)
 -- ═══════════════════════════════════════════════════════════
 
+-- Prefer seed.sql which uses email-join UPSERT — no hardcoded UUIDs needed.
 -- insert into profiles (id, name, role, team_code, avatar) values
--- ('UUID-OF-LEGAL',   'Alex Carter',  'legal',      'L', 'NK'),
--- ('UUID-OF-FINANCE',  'Jordan Lee', 'finance',    'F', 'JL'),
--- ('UUID-OF-BUSINESS',  'Sam Rivera', 'business',   'B', 'SR'),
--- ('UUID-OF-COMPLIANCE',  'Riley Quinn', 'compliance', 'C', 'NK');
+-- ('UUID-OF-NITIN',   'Nitin',        'legal',      'L', 'NI'),
+-- ('UUID-OF-NEHA',    'Neha',         'finance',    'F', 'NE'),
+-- ('UUID-OF-PANKAJ',  'Pankaj Mehta', 'business',   'B', 'PM'),
+-- ('UUID-OF-NIKHIL',  'Nikhil',       'compliance', 'C', 'NK');

@@ -32,20 +32,28 @@ END $$;
 -- ── STEP 2: pgcrypto ───────────────────────────────────────────────────────
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- ── STEP 3: Profiles for existing Supabase users ──────────────────────────
--- Auth users already exist — only insert profiles (FK: profiles.id → auth.users.id)
--- UIDs from Supabase Dashboard → Authentication → Users
-INSERT INTO profiles (id, name, role, team_code, avatar) VALUES
-  ('2e67f8ea-68e4-4176-8c97-25e9c090f6d0', 'Nitin Kumar',  'legal',      'L', 'NK'),
-  ('5837357d-882c-4d59-84ac-fd0ac1aef464', 'Pankaj Mehta', 'finance',    'F', 'PM'),
-  ('e2c91d93-78cc-490d-b994-b9dccaf9dcfe', 'Madhvi Singh', 'business',   'B', 'MS'),
-  ('424b5780-eb11-48b6-9a67-362ea1249068', 'Nitin Kapoor', 'compliance', 'C', 'NK')
-ON CONFLICT (id) DO NOTHING;
+-- ── STEP 3: Profiles — upsert by email (handles create + fixes wrong data) ─
+-- Joins auth.users by email so UUIDs never need to be hardcoded.
+-- Re-running this is safe: ON CONFLICT updates name/role/team_code/avatar.
+INSERT INTO profiles (id, name, role, team_code, avatar)
+SELECT au.id, t.name, t.role, t.team_code, t.avatar
+FROM (VALUES
+  ('nitin@gyftr.net',        'Nitin',        'legal',      'L', 'NI'),
+  ('neha@gyftr.net',         'Neha',         'finance',    'F', 'NE'),
+  ('pankaj.mehta@gyftr.net', 'Pankaj Mehta', 'business',   'B', 'PM'),
+  ('nikhil@gyftr.net',       'Nikhil',       'compliance', 'C', 'NK')
+) AS t(email, name, role, team_code, avatar)
+JOIN auth.users au ON au.email = t.email
+ON CONFLICT (id) DO UPDATE SET
+  name      = EXCLUDED.name,
+  role      = EXCLUDED.role,
+  team_code = EXCLUDED.team_code,
+  avatar    = EXCLUDED.avatar;
 
 -- ── STEP 4: Seed 6 agreements + all related data ──────────────────────────
 DO $$
 DECLARE
-  uid_legal  UUID := '2e67f8ea-68e4-4176-8c97-25e9c090f6d0';  -- nitin@gyftr.com
+  uid_legal  UUID;
   ag1  UUID := 'bbbb0001-0000-0000-0000-000000000000';
   ag2  UUID := 'bbbb0002-0000-0000-0000-000000000000';
   ag3  UUID := 'bbbb0003-0000-0000-0000-000000000000';
@@ -62,6 +70,7 @@ DECLARE
   cl2d UUID := 'cccc0204-0000-0000-0000-000000000000';
   cl2e UUID := 'cccc0205-0000-0000-0000-000000000000';
 BEGIN
+  SELECT id INTO uid_legal FROM auth.users WHERE email = 'nitin@gyftr.net';
 
 -- ── AGREEMENTS ────────────────────────────────────────────────────────────
 INSERT INTO agreements (
@@ -70,37 +79,37 @@ INSERT INTO agreements (
   doc_link, client_dates, created_by, created_at, updated_at
 ) VALUES
   (ag1, 'LKP Finance Limited', 'LKP', 'API / Direct', 'review', 'responded',
-   '2026-07-01', '2026-01-10', 'Nitin Kumar', 'Pankaj Mehta', 'Madhvi Singh', 'Nitin Kapoor',
+   '2026-07-01', '2026-01-10', 'Nitin', 'Neha', 'Pankaj Mehta', 'Nikhil',
    'https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit',
    '{"draftStart":"2026-01-10","latestModified":"2026-06-04","effectiveDate":"2026-07-01","signingDate":"","endDate":"2027-01-09"}',
    uid_legal, '2026-01-10 10:00:00+05:30', '2026-06-10 11:00:00+05:30'),
 
   (ag2, 'Axis Bank', 'AXIS', 'API / Direct', 'review', 'negotiating',
-   '2026-06-30', '2026-03-05', 'Nitin Kumar', 'Pankaj Mehta', 'Madhvi Singh', 'Nitin Kapoor',
+   '2026-06-30', '2026-03-05', 'Nitin', 'Neha', 'Pankaj Mehta', 'Nikhil',
    'https://docs.google.com/document/d/19GynpWHuPzVZqyQXCIcRkkXCl4Zaji0P/edit',
    '{"draftStart":"2026-03-05","latestModified":"2026-06-01","effectiveDate":"2026-07-01","signingDate":"","endDate":"2027-03-04"}',
    uid_legal, '2026-03-05 09:00:00+05:30', '2026-06-08 10:30:00+05:30'),
 
   (ag3, 'HDFC Bank', 'HDFC', 'White Label', 'pending', 'awaiting',
-   '2026-07-15', '2026-04-01', 'Nitin Kumar', 'Pankaj Mehta', 'Madhvi Singh', 'Nitin Kapoor',
+   '2026-07-15', '2026-04-01', 'Nitin', 'Neha', 'Pankaj Mehta', 'Nikhil',
    'https://docs.google.com/document/d/17-mhtub5pwUDQT__kfNI8e1Liy5Ox9WA/edit',
    '{"draftStart":"2026-04-01","latestModified":"2026-06-01","effectiveDate":"2026-08-01","signingDate":"","endDate":"2027-07-31"}',
    uid_legal, '2026-04-01 09:00:00+05:30', '2026-06-01 14:00:00+05:30'),
 
   (ag4, 'IndusInd Bank', 'IND', 'API / Direct', 'review', 'responded',
-   '2026-07-01', '2026-05-12', 'Nitin Kumar', 'Pankaj Mehta', 'Madhvi Singh', 'Nitin Kapoor',
+   '2026-07-01', '2026-05-12', 'Nitin', 'Neha', 'Pankaj Mehta', 'Nikhil',
    'https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit',
    '{"draftStart":"2026-05-12","latestModified":"2026-06-04","effectiveDate":"2026-07-01","signingDate":"","endDate":"2027-05-11"}',
    uid_legal, '2026-05-12 11:30:00+05:30', '2026-06-05 14:22:00+05:30'),
 
   (ag5, 'ICICI Bank', 'ICICI', 'API / Direct', 'closed', 'finalised',
-   '2026-04-01', '2026-01-05', 'Nitin Kumar', 'Pankaj Mehta', 'Madhvi Singh', 'Nitin Kapoor',
+   '2026-04-01', '2026-01-05', 'Nitin', 'Neha', 'Pankaj Mehta', 'Nikhil',
    'https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit',
    '{"draftStart":"2026-01-05","latestModified":"2026-04-01","effectiveDate":"2026-05-01","signingDate":"2026-04-10","endDate":"2027-04-30"}',
    uid_legal, '2026-01-05 09:00:00+05:30', '2026-04-10 12:00:00+05:30'),
 
   (ag6, 'Kotak Mahindra Bank', 'KMB', 'Reseller', 'reopen', 'responded',
-   '2026-05-30', '2026-02-01', 'Nitin Kumar', 'Pankaj Mehta', 'Madhvi Singh', 'Nitin Kapoor',
+   '2026-05-30', '2026-02-01', 'Nitin', 'Neha', 'Pankaj Mehta', 'Nikhil',
    'https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit',
    '{"draftStart":"2026-02-01","latestModified":"2026-06-06","effectiveDate":"","signingDate":"","endDate":""}',
    uid_legal, '2026-02-01 11:00:00+05:30', '2026-06-06 15:00:00+05:30')
@@ -108,48 +117,48 @@ ON CONFLICT (id) DO NOTHING;
 
 -- ── TEAM STATUSES ─────────────────────────────────────────────────────────
 INSERT INTO team_statuses (agreement_id, team_code, status, aging_days, updated_by, updated_at) VALUES
-  (ag1,'L','Approved',0,'Nitin Kumar','2026-05-15 10:00:00+05:30'),
+  (ag1,'L','Approved',0,'Nitin','2026-05-15 10:00:00+05:30'),
   (ag1,'F','Under Review',3,'Pankaj Mehta','2026-06-10 11:00:00+05:30'),
   (ag1,'C','Pending',0,'—','2026-01-10 10:00:00+05:30'),
-  (ag1,'B','Approved',0,'Madhvi Singh','2026-05-18 09:00:00+05:30'),
-  (ag2,'L','Under Review',2,'Nitin Kumar','2026-06-08 10:30:00+05:30'),
+  (ag1,'B','Approved',0,'Pankaj Mehta','2026-05-18 09:00:00+05:30'),
+  (ag2,'L','Under Review',2,'Nitin','2026-06-08 10:30:00+05:30'),
   (ag2,'F','Under Review',1,'Pankaj Mehta','2026-06-08 10:30:00+05:30'),
   (ag2,'C','Pending',0,'—','2026-03-05 09:00:00+05:30'),
-  (ag2,'B','Approved',0,'Madhvi Singh','2026-04-02 10:00:00+05:30'),
-  (ag3,'L','Under Review',1,'Nitin Kumar','2026-06-01 14:00:00+05:30'),
+  (ag2,'B','Approved',0,'Pankaj Mehta','2026-04-02 10:00:00+05:30'),
+  (ag3,'L','Under Review',1,'Nitin','2026-06-01 14:00:00+05:30'),
   (ag3,'F','Pending',0,'—','2026-04-01 09:00:00+05:30'),
   (ag3,'C','Pending',0,'—','2026-04-01 09:00:00+05:30'),
   (ag3,'B','Pending',0,'—','2026-04-01 09:00:00+05:30'),
-  (ag4,'L','Approved',0,'Nitin Kumar','2026-06-01 09:00:00+05:30'),
+  (ag4,'L','Approved',0,'Nitin','2026-06-01 09:00:00+05:30'),
   (ag4,'F','Under Review',3,'Pankaj Mehta','2026-06-05 14:22:00+05:30'),
   (ag4,'C','Pending',0,'—','2026-05-12 11:30:00+05:30'),
-  (ag4,'B','Approved',0,'Madhvi Singh','2026-06-03 10:05:00+05:30'),
-  (ag5,'L','Approved',0,'Nitin Kumar','2026-02-10 10:00:00+05:30'),
+  (ag4,'B','Approved',0,'Pankaj Mehta','2026-06-03 10:05:00+05:30'),
+  (ag5,'L','Approved',0,'Nitin','2026-02-10 10:00:00+05:30'),
   (ag5,'F','Approved',0,'Pankaj Mehta','2026-03-01 09:00:00+05:30'),
-  (ag5,'C','Approved',0,'Nitin Kapoor','2026-03-10 14:00:00+05:30'),
-  (ag5,'B','Approved',0,'Madhvi Singh','2026-02-15 11:00:00+05:30'),
-  (ag6,'L','Under Review',3,'Nitin Kumar','2026-06-07 10:30:00+05:30'),
+  (ag5,'C','Approved',0,'Nikhil','2026-03-10 14:00:00+05:30'),
+  (ag5,'B','Approved',0,'Pankaj Mehta','2026-02-15 11:00:00+05:30'),
+  (ag6,'L','Under Review',3,'Nitin','2026-06-07 10:30:00+05:30'),
   (ag6,'F','Rejected',5,'Pankaj Mehta','2026-06-06 15:00:00+05:30'),
   (ag6,'C','Pending',0,'—','2026-02-01 11:00:00+05:30'),
-  (ag6,'B','Approved',0,'Madhvi Singh','2026-03-10 09:00:00+05:30')
+  (ag6,'B','Approved',0,'Pankaj Mehta','2026-03-10 09:00:00+05:30')
 ON CONFLICT (agreement_id, team_code) DO NOTHING;
 
 -- ── REMARKS ───────────────────────────────────────────────────────────────
 INSERT INTO remarks (agreement_id, author_name, author_role, text, created_at) VALUES
-  (ag1,'Nitin Kumar','Legal','D1 sent — standard E2E Buy & Sell template used. Revenue share at 15% as per business approval.','2026-05-15 10:00:00+05:30'),
-  (ag1,'Madhvi Singh','Business','LKP confirmed interest. Client wants payment cycle changed from 30 to 45 days.','2026-05-20 14:30:00+05:30'),
-  (ag1,'Pankaj Mehta','Finance','45-day payment cycle acceptable but need prefunded advance account clause confirmed. Awaiting Legal to revise Annexure A.','2026-06-10 11:00:00+05:30'),
-  (ag2,'Nitin Kumar','Legal','API template sent. Key additions vs E2E: Proprietary Software clause, API uptime SLA, data security obligations.','2026-03-10 09:00:00+05:30'),
-  (ag2,'Madhvi Singh','Business','Axis happy with API access. Dispute on uptime SLA — they want 99.9%, we offered 99.5%.','2026-04-05 15:00:00+05:30'),
-  (ag2,'Pankaj Mehta','Finance','Revenue share model needs clarification. Is it on MRP or selling price? Need Legal to specify in Annexure A clearly.','2026-06-08 10:30:00+05:30'),
-  (ag3,'Nitin Kumar','Legal','WL template sent. This is more complex — includes WhiteLabel website development, payment gateway, API, and direct sending module. All 4 fulfilment methods included.','2026-04-05 09:00:00+05:30'),
-  (ag3,'Madhvi Singh','Business','HDFC is for channel incentivization. Large deal — ~Rs 2Cr annual GMV expected. Client wants custom branding on WL site.','2026-04-10 11:00:00+05:30'),
-  (ag3,'Nitin Kumar','Legal','D1 sent. Awaiting client response. Remind in 7 days if no reply.','2026-06-01 14:00:00+05:30'),
-  (ag4,'Nitin Kumar','Legal','Draft shared with finance team for review.','2026-06-01 09:00:00+05:30'),
-  (ag4,'Pankaj Mehta','Finance','Awaiting clarification on revenue share clause — is the 17% on MRP or selling price?','2026-06-05 14:22:00+05:30'),
-  (ag5,'Nitin Kumar','Legal','Fully executed. Signed copies filed. Agreement live from 1 May 2026.','2026-04-10 12:00:00+05:30'),
-  (ag6,'Pankaj Mehta','Finance','Rejected. Revenue share of 17% is below our minimum threshold of 18% for resellers. Please rework Annexure A and resubmit.','2026-06-06 15:00:00+05:30'),
-  (ag6,'Nitin Kumar','Legal','Noted. Will rework clauses 5 and Annexure A. New draft by June 15.','2026-06-07 10:30:00+05:30')
+  (ag1,'Nitin','Legal','D1 sent — standard E2E Buy & Sell template used. Revenue share at 15% as per business approval.','2026-05-15 10:00:00+05:30'),
+  (ag1,'Pankaj Mehta','Business','LKP confirmed interest. Client wants payment cycle changed from 30 to 45 days.','2026-05-20 14:30:00+05:30'),
+  (ag1,'Neha','Finance','45-day payment cycle acceptable but need prefunded advance account clause confirmed. Awaiting Legal to revise Annexure A.','2026-06-10 11:00:00+05:30'),
+  (ag2,'Nitin','Legal','API template sent. Key additions vs E2E: Proprietary Software clause, API uptime SLA, data security obligations.','2026-03-10 09:00:00+05:30'),
+  (ag2,'Pankaj Mehta','Business','Axis happy with API access. Dispute on uptime SLA — they want 99.9%, we offered 99.5%.','2026-04-05 15:00:00+05:30'),
+  (ag2,'Neha','Finance','Revenue share model needs clarification. Is it on MRP or selling price? Need Legal to specify in Annexure A clearly.','2026-06-08 10:30:00+05:30'),
+  (ag3,'Nitin','Legal','WL template sent. This is more complex — includes WhiteLabel website development, payment gateway, API, and direct sending module. All 4 fulfilment methods included.','2026-04-05 09:00:00+05:30'),
+  (ag3,'Pankaj Mehta','Business','HDFC is for channel incentivization. Large deal — ~Rs 2Cr annual GMV expected. Client wants custom branding on WL site.','2026-04-10 11:00:00+05:30'),
+  (ag3,'Nitin','Legal','D1 sent. Awaiting client response. Remind in 7 days if no reply.','2026-06-01 14:00:00+05:30'),
+  (ag4,'Nitin','Legal','Draft shared with finance team for review.','2026-06-01 09:00:00+05:30'),
+  (ag4,'Neha','Finance','Awaiting clarification on revenue share clause — is the 17% on MRP or selling price?','2026-06-05 14:22:00+05:30'),
+  (ag5,'Nitin','Legal','Fully executed. Signed copies filed. Agreement live from 1 May 2026.','2026-04-10 12:00:00+05:30'),
+  (ag6,'Neha','Finance','Rejected. Revenue share of 17% is below our minimum threshold of 18% for resellers. Please rework Annexure A and resubmit.','2026-06-06 15:00:00+05:30'),
+  (ag6,'Nitin','Legal','Noted. Will rework clauses 5 and Annexure A. New draft by June 15.','2026-06-07 10:30:00+05:30')
 ON CONFLICT DO NOTHING;
 
 -- ── DRAFTS ────────────────────────────────────────────────────────────────
@@ -181,30 +190,30 @@ ON CONFLICT DO NOTHING;
 
 -- ── HISTORY LOG ───────────────────────────────────────────────────────────
 INSERT INTO history_log (agreement_id, team, changed_by, from_status, to_status, created_at) VALUES
-  (ag1,'Legal','Nitin Kumar','—','Pending','2026-01-10 10:00:00+05:30'),
-  (ag1,'Legal','Nitin Kumar','Pending','Approved','2026-05-15 10:00:00+05:30'),
-  (ag1,'Business','Madhvi Singh','Pending','Approved','2026-05-18 09:00:00+05:30'),
-  (ag1,'Finance','Pankaj Mehta','Pending','Under Review','2026-06-10 11:00:00+05:30'),
-  (ag2,'Legal','Nitin Kumar','—','Pending','2026-03-05 09:00:00+05:30'),
-  (ag2,'Legal','Nitin Kumar','Pending','Under Review','2026-03-10 09:00:00+05:30'),
-  (ag2,'Business','Madhvi Singh','Pending','Approved','2026-04-02 10:00:00+05:30'),
-  (ag2,'Finance','Pankaj Mehta','Pending','Under Review','2026-06-08 10:30:00+05:30'),
-  (ag3,'Legal','Nitin Kumar','—','Pending','2026-04-01 09:00:00+05:30'),
-  (ag3,'Legal','Nitin Kumar','Pending','Under Review','2026-06-01 14:00:00+05:30'),
-  (ag4,'Legal','Nitin Kumar','—','Pending','2026-05-12 11:30:00+05:30'),
-  (ag4,'Legal','Nitin Kumar','Pending','Approved','2026-06-01 09:00:00+05:30'),
-  (ag4,'Business','Madhvi Singh','Pending','Approved','2026-06-03 10:05:00+05:30'),
-  (ag4,'Finance','Pankaj Mehta','Pending','Under Review','2026-06-05 14:22:00+05:30'),
-  (ag5,'Legal','Nitin Kumar','—','Pending','2026-01-05 09:00:00+05:30'),
-  (ag5,'Legal','Nitin Kumar','Pending','Approved','2026-02-10 10:00:00+05:30'),
-  (ag5,'Business','Madhvi Singh','Pending','Approved','2026-02-15 11:00:00+05:30'),
-  (ag5,'Finance','Pankaj Mehta','Under Review','Approved','2026-03-01 09:00:00+05:30'),
-  (ag5,'Compliance','Nitin Kapoor','Under Review','Approved','2026-03-10 14:00:00+05:30'),
-  (ag5,'Legal','Nitin Kumar','Final Sign','Closed','2026-04-10 12:00:00+05:30'),
-  (ag6,'Legal','Nitin Kumar','—','Pending','2026-02-01 11:00:00+05:30'),
-  (ag6,'Business','Madhvi Singh','Pending','Approved','2026-03-10 09:00:00+05:30'),
-  (ag6,'Finance','Pankaj Mehta','Under Review','Approved','2026-04-20 10:00:00+05:30'),
-  (ag6,'Finance','Pankaj Mehta','Approved','Rejected','2026-06-06 15:00:00+05:30')
+  (ag1,'Legal','Nitin','—','Pending','2026-01-10 10:00:00+05:30'),
+  (ag1,'Legal','Nitin','Pending','Approved','2026-05-15 10:00:00+05:30'),
+  (ag1,'Business','Pankaj Mehta','Pending','Approved','2026-05-18 09:00:00+05:30'),
+  (ag1,'Finance','Neha','Pending','Under Review','2026-06-10 11:00:00+05:30'),
+  (ag2,'Legal','Nitin','—','Pending','2026-03-05 09:00:00+05:30'),
+  (ag2,'Legal','Nitin','Pending','Under Review','2026-03-10 09:00:00+05:30'),
+  (ag2,'Business','Pankaj Mehta','Pending','Approved','2026-04-02 10:00:00+05:30'),
+  (ag2,'Finance','Neha','Pending','Under Review','2026-06-08 10:30:00+05:30'),
+  (ag3,'Legal','Nitin','—','Pending','2026-04-01 09:00:00+05:30'),
+  (ag3,'Legal','Nitin','Pending','Under Review','2026-06-01 14:00:00+05:30'),
+  (ag4,'Legal','Nitin','—','Pending','2026-05-12 11:30:00+05:30'),
+  (ag4,'Legal','Nitin','Pending','Approved','2026-06-01 09:00:00+05:30'),
+  (ag4,'Business','Pankaj Mehta','Pending','Approved','2026-06-03 10:05:00+05:30'),
+  (ag4,'Finance','Neha','Pending','Under Review','2026-06-05 14:22:00+05:30'),
+  (ag5,'Legal','Nitin','—','Pending','2026-01-05 09:00:00+05:30'),
+  (ag5,'Legal','Nitin','Pending','Approved','2026-02-10 10:00:00+05:30'),
+  (ag5,'Business','Pankaj Mehta','Pending','Approved','2026-02-15 11:00:00+05:30'),
+  (ag5,'Finance','Neha','Under Review','Approved','2026-03-01 09:00:00+05:30'),
+  (ag5,'Compliance','Nikhil','Under Review','Approved','2026-03-10 14:00:00+05:30'),
+  (ag5,'Legal','Nitin','Final Sign','Closed','2026-04-10 12:00:00+05:30'),
+  (ag6,'Legal','Nitin','—','Pending','2026-02-01 11:00:00+05:30'),
+  (ag6,'Business','Pankaj Mehta','Pending','Approved','2026-03-10 09:00:00+05:30'),
+  (ag6,'Finance','Neha','Under Review','Approved','2026-04-20 10:00:00+05:30'),
+  (ag6,'Finance','Neha','Approved','Rejected','2026-06-06 15:00:00+05:30')
 ON CONFLICT DO NOTHING;
 
 -- ── CLAUSES — AG1 (LKP Finance) ───────────────────────────────────────────
