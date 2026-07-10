@@ -64,8 +64,10 @@ window.handleLogin = async function () {
     return
   }
 
-  // Demo role pill selected with example.com address → bypass Supabase
-  const demoRole = Object.entries(DEMO_EMAILS).find(([, e]) => e === email)?.[0]
+  // Demo role pill selected → bypass Supabase (trust selectedRole over autofilled email)
+  const demoRole = DEMO_EMAILS[selectedRole]
+    ? selectedRole
+    : Object.entries(DEMO_EMAILS).find(([, e]) => e === email)?.[0]
   if (demoRole) {
     enterDemoMode(demoRole)
     return
