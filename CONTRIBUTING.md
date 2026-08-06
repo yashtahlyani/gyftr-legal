@@ -6,10 +6,8 @@ Thanks for your interest in improving the GyfTR Legal Portal.
 
 1. Fork and clone the repo.
 2. `npm install`
-3. Copy `.env.example` to `.env.local` and fill in your backend API URL and Cognito keys (or skip this and use demo-mode login for frontend-only work).
+3. Copy `.env.example` to `.env.local` and fill in your Supabase keys.
 4. `npm run dev` and open http://localhost:5173
-
-For backend changes: `cd backend && npm install`, copy `backend/.env.example` to `backend/.env` and fill in RDS/Cognito/S3 values, `npm run dev`. See `infra/HANDOVER.md` for the full setup.
 
 ## Workflow
 
@@ -23,14 +21,9 @@ For backend changes: `cd backend && npm install`, copy `backend/.env.example` to
 ## Code style
 
 - ES modules, no framework — keep dependencies minimal.
-- Frontend: API calls live in `src/lib/api.js`, Cognito auth in
-  `src/lib/auth-cognito.js`, UI logic in `src/ui/`.
-- Backend: routes in `backend/routes/` (one file per resource), shared
-  authorization rules in `backend/authz.js` — every route that reads/writes
-  a table gated by role or team should use it rather than re-deriving the
-  check inline.
-- Never commit secrets. `.env.local`/`backend/.env` are gitignored; use the
-  matching `.env.example` files to document new variables.
+- Data access lives in `src/data/`, UI logic in `src/ui/`, auth in `src/auth/`.
+- Never commit secrets. `.env.local` is gitignored; use `.env.example` to
+  document new variables.
 
 ## Reporting issues
 
