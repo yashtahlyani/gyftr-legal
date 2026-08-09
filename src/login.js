@@ -1,4 +1,4 @@
-import { db } from './lib/supabase.js'
+import { signIn } from './lib/auth-cognito.js'
 
 const DEMO_EMAILS = {
   legal:      'nitin@gyftr.net',
@@ -77,31 +77,22 @@ window.handleLogin = async function () {
   if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true }
 
   try {
-    const { data, error } = await db.auth.signInWithPassword({ email, password: pass })
-
-    if (error) {
-      if (btn) { btn.textContent = 'Sign in →'; btn.disabled = false }
-      if (error.message?.toLowerCase().includes('invalid')) {
-        showError('Incorrect email or password.')
-      } else {
-        showError(error.message || 'Sign-in failed. Please try again.')
-      }
-      return
-    }
-
-    // Determine role from profiles table
-    const { data: profile } = await db
-      .from('profiles').select('*').eq('id', data.user.id).single()
-    const matchedRole = profile?.role
-      || Object.entries(DEMO_EMAILS).find(([, e]) => e === email)?.[0]
-      || selectedRole
-
-    sessionStorage.setItem('profile', JSON.stringify(profile || { role: matchedRole }))
+    // Real @gyftr.net account → Cognito. Returns the linked profiles row
+    // (role, team_code, name, avatar) via GET /api/profile/me.
+    const profile = await signIn(email, pass)
+    sessionStorage.setItem('profile', JSON.stringify(profile))
     window.location.href = '/app.html'
 
   } catch (err) {
     if (btn) { btn.textContent = 'Sign in →'; btn.disabled = false }
-    showError('Could not connect to server. Check your internet connection.')
+    const msg = (err.message || '').toLowerCase()
+    if (msg.includes('incorrect') || msg.includes('not authorized') || msg.includes('invalid')) {
+      showError('Incorrect email or password.')
+    } else if (msg.includes('no profile linked')) {
+      showError('This account has no linked profile. Contact an admin.')
+    } else {
+      showError('Could not connect to server. Check your internet connection.')
+    }
   }
 }
 
