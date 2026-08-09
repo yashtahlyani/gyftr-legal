@@ -1,7 +1,5 @@
 // AI-powered agreement analysis — OpenAI GPT-4o mini
 
-import { API_URL } from '../lib/api.js'
-
 const STORAGE_KEY = 'gyftr_openai_key'
 
 export function getStoredKey() {
@@ -60,7 +58,7 @@ export async function analyzeWithAI(agreement, apiKey, docText) {
   const key = apiKey || getStoredKey()
   if (!key) throw new Error('no_key')
 
-  const res = await fetch(`${API_URL}/api/ai-analyze`, {
+  const res = await fetch('/api/ai-analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ agreement, apiKey: key, docText })

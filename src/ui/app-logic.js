@@ -1,13 +1,5 @@
 
-import {
-  loadAllAgreements,
-  createAgreement as apiCreateAgreement,
-  updateAgreementStatus as apiUpdateAgreementStatus,
-  updateClientStatus as apiUpdateClientStatus,
-  updateTeamStatus as apiUpdateTeamStatus,
-  addRemark as apiAddRemark,
-} from '../lib/api.js'
-import { signIn as cognitoSignIn, signOut as cognitoSignOut } from '../lib/auth-cognito.js'
+import { db } from '../lib/supabase.js'
 
 // Safe ID quoting for onclick attrs: integers pass as-is, UUID strings get single-quoted
 const Q = id => typeof id === 'string' ? `'${id}'` : id
@@ -425,18 +417,59 @@ let AGs=[
   }
 ];
 
-/* ════════ BACKEND API INTEGRATION ════════ */
-// Row → portal-format mapping now lives in src/lib/api.js (loadAllAgreements
-// already returns fully-mapped objects, including `_sbId` for the ones that
-// came from the database) — this just merges them into AGs the same way the
-// old Supabase-backed loader did.
-async function _loadFromApi(){
+/* ════════ SUPABASE INTEGRATION ════════ */
+const _SB_STATUS_MAP={'Pending':'tc-none','Under Review':'tc-yellow','Approved':'tc-green','Rejected':'tc-red'};
+function _sbColorFromType(t){
+  if(!t)return'ct-q';const tl=t.toLowerCase();
+  if(tl.includes('api'))return'ct-b';if(tl.includes('white'))return'ct-t';
+  if(tl.includes('reseller'))return'ct-p';if(tl.includes('enterprise'))return'ct-a';
+  return'ct-q';
+}
+function _mapSbRow(row,idx){
+  const tm={},ms={},teamAging={};
+  (row.team_statuses||[]).forEach(ts=>{
+    tm[ts.team_code]=_SB_STATUS_MAP[ts.status]||'tc-none';
+    ms[ts.team_code]=ts.status;
+    teamAging[ts.team_code]=ts.aging_days>0?`+${ts.aging_days}d`:null;
+  });
+  const drafts=(row.drafts||[]).map(d=>({n:d.draft_no,date:d.date,dir:d.direction,note:d.note||'',filePath:d.file_path}));
+  const clauses=(row.clauses||[]).map(c=>({
+    no:c.clause_no,name:c.clause_name,outcome:c.outcome,full:c.full_context,
+    changes:(c.clause_changes||[]).sort((a,b)=>a.draft_no.localeCompare(b.draft_no)).map(cc=>cc.change_text)
+  }));
+  const ag={
+    id:row.id,_sbId:row.id,
+    client:row.client,tag:row.tag||row.client.slice(0,4).toUpperCase(),
+    ct:_sbColorFromType(row.type),
+    sD:row.start_date,type:row.type,
+    st:row.status,clientStatus:row.client_status||'awaiting',
+    pd:row.promise_date||'',
+    tm,ms,teamAging,
+    ag:'On time',ac:'ag-ok',
+    lu:(row.updated_at||row.created_at||'').split('T')[0],
+    doc:row.doc_link||'',
+    sp:{L:row.spoc_legal||'—',F:row.spoc_finance||'—',C:row.spoc_compliance||'—',B:row.spoc_business||'—'},
+    remarks:(row.remarks||[]).map(r=>({author:r.author_name,role:r.author_role,ts:(r.created_at||'').replace('T',' ').slice(0,16),txt:r.text})),
+    hist:(row.history_log||[]).map(h=>({d:(h.created_at||'').replace('T',' ').slice(0,16),t:h.team,b:h.changed_by,f:h.from_status,to:h.to_status})),
+    drafts,clauses,
+    clientDates:row.client_dates||{}
+  };
+  return ag;
+}
+async function _loadFromSupabase(){
   try{
-    const mapped=await loadAllAgreements();
-    if(!mapped||mapped.length===0)return false;
-    // Remove previously-loaded API AGs (UUID string IDs), keep sample AGs (integer IDs)
+    const{data,error}=await db.from('agreements').select(`
+      *,
+      drafts(*),
+      team_statuses(*),
+      remarks(*),
+      history_log(*),
+      clauses(*,clause_changes(*))
+    `).order('created_at',{ascending:false});
+    if(error||!data||data.length===0)return false;
+    // Remove previously-loaded Supabase AGs (UUID string IDs), keep sample AGs (integer IDs)
     for(let i=AGs.length-1;i>=0;i--){if(typeof AGs[i].id==='string')AGs.splice(i,1);}
-    mapped.forEach(a=>AGs.push(a));
+    data.map(_mapSbRow).forEach(a=>AGs.push(a));
     return true;
   }catch(e){return false;}
 }
@@ -507,14 +540,16 @@ function pickRole(el,k){
 async function doLogin(){
   role=selRole;
   const R=ROLES[role];
-  // Try real Cognito auth — falls back silently if offline or unconfigured
+  // Try real Supabase auth — falls back silently if offline or unconfigured
   const email=document.getElementById("loginEmail").value.trim();
   const pass=document.getElementById("loginPass").value.trim();
   if(email&&pass){
     try{
-      await cognitoSignIn(email,pass);
-      const loaded=await _loadFromApi();
-      if(loaded)showToast("Live data loaded","green");
+      const{error}=await db.auth.signInWithPassword({email,password:pass});
+      if(!error){
+        const loaded=await _loadFromSupabase();
+        if(loaded)showToast("Live data loaded from Supabase","green");
+      }
     }catch(e){/* offline / not configured — continue with sample data */}
   }
   document.getElementById("uName").textContent=R.name;
@@ -537,7 +572,7 @@ async function doLogin(){
 function doSignout(){
   sessionStorage.removeItem('demo_role');
   sessionStorage.removeItem('profile');
-  cognitoSignOut();
+  db.auth.signOut().catch(()=>{});
   window.location.href='/index.html';
 }
 
@@ -767,10 +802,18 @@ function ums(id,v){
     showToast("Status updated");
   }
   ftbl();
-  // Persist to the backend (team-status route bundles the history_log entry
-  // server-side, so a single call replaces the old upsert + insert pair)
+  // Persist to Supabase
   if(a._sbId){
-    apiUpdateTeamStatus(a._sbId,mt,v,prev!==v?prev:null,TF[mt]).catch(()=>{});
+    db.from('team_statuses').upsert({
+      agreement_id:a._sbId,team_code:mt,status:v,
+      updated_at:new Date().toISOString(),updated_by:ROLES[role].name
+    },{onConflict:'agreement_id,team_code'}).catch(()=>{});
+    if(prev!==v){
+      db.from('history_log').insert({
+        agreement_id:a._sbId,team:TF[mt],
+        changed_by:ROLES[role].name,from_status:prev,to_status:v
+      }).catch(()=>{});
+    }
   }
 }
 /* Legal only: change overall agreement status */
@@ -782,9 +825,13 @@ function updateAgreementStatus(id,v){
   a.hist.push({d:ns(),t:"Legal",b:ROLES[role].name,f:prev,to:next});
   updateStats();ftbl();
   showToast("Agreement status → "+next,"green");
-  // Persist to the backend (status route bundles the history_log entry server-side)
+  // Persist to Supabase
   if(a._sbId){
-    apiUpdateAgreementStatus(a._sbId,v,prev,next).catch(()=>{});
+    db.from('agreements').update({status:v,updated_at:new Date().toISOString()}).eq('id',a._sbId).catch(()=>{});
+    db.from('history_log').insert({
+      agreement_id:a._sbId,team:"Legal",
+      changed_by:ROLES[role].name,from_status:prev,to_status:next
+    }).catch(()=>{});
   }
 }
 
@@ -899,9 +946,15 @@ function submitRem(){
   renderRemFiltered(a);
   ftbl();
   showToast("Remark added","green");
-  // Persist to the backend (remarks route also touches agreements.updated_at server-side)
+  // Persist to Supabase
   if(a._sbId){
-    apiAddRemark(a._sbId,txt).catch(()=>{});
+    const R2=ROLES[role];
+    db.from('remarks').insert({
+      agreement_id:a._sbId,author_name:R2.name,
+      author_role:R2.role.replace(" Team",""),text:txt
+    }).then(({error})=>{
+      if(!error)db.from('agreements').update({updated_at:new Date().toISOString()}).eq('id',a._sbId).catch(()=>{});
+    }).catch(()=>{});
   }
 }
 function closeRem(){document.getElementById("remModal").classList.remove("show");remAgId=null;}
@@ -1229,13 +1282,39 @@ async function submitCr(){
   AGs.unshift(newAg);
   closeCr();updateStats();ftbl();showToast(`Agreement created for ${c}`,"green");
   ["fc","fty","fpd","fb","fleg","ffin","fcom","fdoc"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=""});
-  // Persist to the backend — the POST /agreements route bundles the default
-  // team_statuses rows, initial history_log entry, and creation remark into
-  // a single transaction server-side, matching what these four separate
-  // Supabase calls used to do.
+  // Persist to Supabase
   try{
-    const data=await apiCreateAgreement({client:c,tag:c.slice(0,4).toUpperCase(),type:t,pd,spocL,spocF,spocB,spocC,doc:docLink});
-    if(data) newAg._sbId=data.id;
+    const{data,error}=await db.from('agreements').insert({
+      client:c,tag:c.slice(0,4).toUpperCase(),type:t,
+      status:'pending',client_status:'awaiting',
+      promise_date:pd||null,
+      spoc_legal:spocL==="—"?null:spocL,
+      spoc_finance:spocF==="—"?null:spocF,
+      spoc_business:spocB==="—"?null:spocB,
+      spoc_compliance:spocC==="—"?null:spocC,
+      doc_link:docLink||null,
+      start_date:new Date().toISOString().split('T')[0]
+    }).select().single();
+    if(!error&&data){
+      newAg._sbId=data.id;
+      // Insert default team statuses
+      db.from('team_statuses').insert([
+        {agreement_id:data.id,team_code:'L',status:'Pending'},
+        {agreement_id:data.id,team_code:'F',status:'Pending'},
+        {agreement_id:data.id,team_code:'C',status:'Pending'},
+        {agreement_id:data.id,team_code:'B',status:'Pending'}
+      ]).catch(()=>{});
+      // Log initial history
+      db.from('history_log').insert({
+        agreement_id:data.id,team:'Legal',
+        changed_by:R.name,from_status:'—',to_status:'Pending'
+      }).catch(()=>{});
+      // Save creation remark
+      db.from('remarks').insert({
+        agreement_id:data.id,author_name:R.name,
+        author_role:R.role.replace(' Team',''),text:'Agreement created.'
+      }).catch(()=>{});
+    }
   }catch(e){/* offline — local only */}
 }
 
@@ -1419,7 +1498,7 @@ function updateClientStatus(id,v){
   ftbl();
   showToast("Client status → "+CS_CFG[v].l,"green");
   if(a._sbId){
-    apiUpdateClientStatus(a._sbId,v).catch(()=>{});
+    db.from('agreements').update({client_status:v,updated_at:new Date().toISOString()}).eq('id',a._sbId).catch(()=>{});
   }
 }
 
@@ -2498,6 +2577,6 @@ Object.assign(window, {
   copyAgLink, printTable,
   // Constants
   SC, TF, TCL, DOT_CLS, OC,
-  // API loader — called by main.js after portal shows
-  _loadFromApi,
+  // Supabase loader — called by main.js after portal shows
+  _loadFromSupabase,
 })

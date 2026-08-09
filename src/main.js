@@ -1,6 +1,6 @@
 // ── GyfTR Legal Portal — Main Entry Point ────────────────────────────────────
 
-import { restoreSession } from './lib/auth-cognito.js'
+import { db } from './lib/supabase.js'
 import { ROLES, AGs } from './data/sample.js'
 import {
   fd, ns, td, parseTs, diffLabel,
@@ -13,14 +13,26 @@ let savedRole  = demoRole
 let profile    = null
 
 if (!demoRole) {
-  // Restore the Cognito session (this also sets the auth token every
-  // src/lib/api.js call sends as a Bearer header) and fetch the linked profile.
-  profile = await restoreSession()
-  if (!profile) {
+  // Try real Supabase session
+  const { data: { session } } = await db.auth.getSession()
+  if (!session) {
     window.location.href = '/index.html'
     throw new Error('Not authenticated')
   }
-  sessionStorage.setItem('profile', JSON.stringify(profile))
+
+  const profileRaw = sessionStorage.getItem('profile')
+  profile = profileRaw ? JSON.parse(profileRaw) : null
+
+  if (!profile) {
+    const { data: p, error: pErr } = await db
+      .from('profiles').select('*').eq('id', session.user.id).single()
+    if (pErr || !p) {
+      window.location.href = '/index.html'
+      throw new Error('No profile found')
+    }
+    profile = p
+    sessionStorage.setItem('profile', JSON.stringify(profile))
+  }
   savedRole = profile.role || 'legal'
 }
 
@@ -90,10 +102,10 @@ import('./ui/app-logic.js').then(() => {
     window.checkReminderNotifications()
   }
 
-  // ── Load live data from the API if authenticated (not demo mode) ──────────
-  if (!demoRole && typeof window._loadFromApi === 'function') {
+  // ── Load live data from Supabase if authenticated (not demo mode) ─────────
+  if (!demoRole && typeof window._loadFromSupabase === 'function') {
     AGs.length = 0
-    window._loadFromApi().then(loaded => {
+    window._loadFromSupabase().then(loaded => {
       if (loaded) {
         if (typeof window.updateStats === 'function') window.updateStats()
         if (typeof window.render === 'function' && typeof window.gf === 'function') {
@@ -102,7 +114,7 @@ import('./ui/app-logic.js').then(() => {
         if (typeof window.checkReminderNotifications === 'function') {
           window.checkReminderNotifications()
         }
-        showToast('Live data loaded', 'green')
+        showToast('Live data loaded from Supabase', 'green')
       }
     }).catch(() => {})
   }
