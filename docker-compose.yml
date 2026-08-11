@@ -2,7 +2,7 @@
 # Frontend and backend are separate images with separate ports/URLs.
 #
 # Usage:
-#   cp .env.example .env   # fill in values
+#   cp .env.example .env   # fill in values 
 #   docker compose up --build
 #
 # Prod URLs: frontend https://legal.gyftr.net | backend https://legal-api.gyftr.net
