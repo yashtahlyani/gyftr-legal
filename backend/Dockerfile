@@ -16,4 +16,4 @@ EXPOSE 7978
 
 # Env vars (DB_*/AWS_SECRET_NAME, COGNITO_*, FRONTEND_URL, DRAFTS_BUCKET, etc.)
 # are injected at runtime — do not bake secrets into the image.
-CMD ["node", "server.js"]
+CMD ["node", "server.js"] 
