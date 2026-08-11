@@ -117,10 +117,10 @@ holding DB credentials, and a second private **S3** bucket for draft files.
 
 1. Go to **EC2 → Load Balancers → Create ALB**.
 2. Name: `gyftr-legal-api-alb`, scheme: **Internet-facing**.
-3. Listener: HTTPS 443 (attach an ACM certificate for `api.legal.gyftr.net`).
+3. Listener: HTTPS 443 (attach an ACM certificate for `legal-api.gyftr.net`).
 4. Target group: `gyftr-legal-api-tg`, protocol HTTP, port 7978, health check path `/health`, target: the EC2 instance.
-5. In Route53 (or your DNS): add `api.legal.gyftr.net` CNAME → ALB DNS name.
-6. Set `VITE_API_URL=https://api.legal.gyftr.net` in `frontend/.env.local`.
+5. In Route53 (or your DNS): add `legal-api.gyftr.net` CNAME → ALB DNS name.
+6. Set `VITE_API_URL=https://legal-api.gyftr.net` in `frontend/.env.local`.
 
 ---
 
@@ -202,7 +202,7 @@ already linked.
 Finally, verify the deploy:
 
 ```bash
-export SMOKE_API_URL=https://api.legal.gyftr.net
+export SMOKE_API_URL=https://legal-api.gyftr.net
 export SMOKE_TOKEN=<a real Cognito ID token — see migration/smoke-test.js for how to get one>
 node smoke-test.js
 ```
@@ -232,7 +232,7 @@ aws cloudfront create-invalidation --distribution-id <CF_ID> --paths "/*"
 
 | Variable | Where | Value |
 |---|---|---|
-| `VITE_API_URL` | `frontend/.env.local` | `https://api.legal.gyftr.net` |
+| `VITE_API_URL` | `frontend/.env.local` | `https://legal-api.gyftr.net` |
 | `VITE_COGNITO_USER_POOL_ID` | `frontend/.env.local` | From Cognito console |
 | `VITE_COGNITO_CLIENT_ID` | `frontend/.env.local` | From Cognito console |
 | `VITE_OPENAI_API_KEY` | `frontend/.env.local` | Optional client-supplied fallback (see `backend/.env` `OPENAI_API_KEY` instead) |

@@ -5,7 +5,7 @@
 #   cp .env.example .env   # fill in values
 #   docker compose up --build
 #
-# Prod URLs: frontend https://legal.gyftr.net | backend https://api.legal.gyftr.net
+# Prod URLs: frontend https://legal.gyftr.net | backend https://legal-api.gyftr.net
 # Local compose: frontend http://localhost:7979 | backend http://localhost:7978
 
 services:
