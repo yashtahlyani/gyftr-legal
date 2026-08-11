@@ -3,7 +3,7 @@
 #
 # Build:
 #   docker build --platform linux/arm64 \
-#     --build-arg VITE_API_URL=https://legal-api.gyftr.net \
+#     --build-arg VITE_API_URL=https://legal-api.gyftr.net \ 
 #     --build-arg VITE_COGNITO_USER_POOL_ID=ap-south-1_xxx \
 #     --build-arg VITE_COGNITO_CLIENT_ID=xxx \
 #     -t gyftr-legal-frontend ./frontend
