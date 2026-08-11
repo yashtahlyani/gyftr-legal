@@ -64,16 +64,17 @@ window.handleLogin = async function () {
     return
   }
 
-  // Demo role pill selected → bypass Supabase (trust selectedRole over autofilled email)
-  const demoRole = DEMO_EMAILS[selectedRole]
-    ? selectedRole
-    : Object.entries(DEMO_EMAILS).find(([, e]) => e === email)?.[0]
-  if (demoRole) {
+  // Demo mode ONLY when email is a known demo account AND the demo password
+  // is used. Previously any Sign-in with a selected role pill bypassed Cognito
+  // (selectedRole defaults to "legal"), so any password "logged in".
+  const DEMO_PASSWORD = 'gyftr@1234'
+  const demoRole = Object.entries(DEMO_EMAILS).find(([, e]) => e === email)?.[0]
+  if (demoRole && pass === DEMO_PASSWORD) {
     enterDemoMode(demoRole)
     return
   }
 
-  // Real email → try Supabase auth
+  // Real account → Cognito
   if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true }
 
   try {
@@ -86,12 +87,12 @@ window.handleLogin = async function () {
   } catch (err) {
     if (btn) { btn.textContent = 'Sign in →'; btn.disabled = false }
     const msg = (err.message || '').toLowerCase()
-    if (msg.includes('incorrect') || msg.includes('not authorized') || msg.includes('invalid')) {
+    if (msg.includes('incorrect') || msg.includes('not authorized') || msg.includes('invalid') || msg.includes('password')) {
       showError('Incorrect email or password.')
     } else if (msg.includes('no profile linked')) {
       showError('This account has no linked profile. Contact an admin.')
     } else {
-      showError('Could not connect to server. Check your internet connection.')
+      showError(err.message || 'Could not connect to server. Check your internet connection.')
     }
   }
 }
