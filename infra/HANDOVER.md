@@ -41,8 +41,8 @@ database credentials and enforces who's allowed to do what. See
 git clone <repo-url> gyftr-legal
 cd gyftr-legal
 
-npm install                                    # frontend
-cd backend   && npm install && cd ..           # backend
+npm run install:all                            # frontend + backend
+# or: cd frontend && npm install && cd ../backend && npm install && cd ..
 cd migration && npm install && cd ..           # migration scripts
 ```
 

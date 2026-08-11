@@ -50,7 +50,7 @@ holding DB credentials, and a second private **S3** bucket for draft files.
 5. User pool name: `gyftr-legal-users`.
 6. App client name: `gyftr-legal-web`, type: **Public client**, no secret.
 7. Note the **User Pool ID** (e.g. `ap-south-1_AbcXYZ`) and **Client ID**.
-8. Put these in the frontend `.env.local`:
+8. Put these in `frontend/.env.local`:
    ```
    VITE_COGNITO_USER_POOL_ID=ap-south-1_AbcXYZ
    VITE_COGNITO_CLIENT_ID=...
@@ -78,7 +78,7 @@ holding DB credentials, and a second private **S3** bucket for draft files.
 1. Go to **EC2 → Launch instance**.
 2. AMI: **Amazon Linux 2023**, instance type: `t3.small`.
 3. Key pair: create `gyftr-legal-key` and download the `.pem`.
-4. Security group `gyftr-legal-ec2-sg`: inbound port 3001 from the ALB's security group, port 22 from your IP only.
+4. Security group `gyftr-legal-ec2-sg`: inbound port 7978 from the ALB's security group, port 22 from your IP only.
 5. IAM role: create role `gyftr-legal-ec2-role` with policies:
    - A custom policy scoped to `secretsmanager:GetSecretValue` on `gyftr/legal/db`
    - A custom policy scoped to `s3:GetObject`, `s3:PutObject` on `arn:aws:s3:::gyftr-legal-drafts/*`
@@ -91,7 +91,7 @@ holding DB credentials, and a second private **S3** bucket for draft files.
    npm install
    # Create /app/gyftr-legal/backend/.env — see backend/.env.example.
    # At minimum:
-   #   PORT=3001
+   #   PORT=7978
    #   AWS_SECRET_NAME=gyftr/legal/db
    #   AWS_REGION=ap-south-1
    #   COGNITO_USER_POOL_ID=ap-south-1_AbcXYZ
@@ -118,9 +118,9 @@ holding DB credentials, and a second private **S3** bucket for draft files.
 1. Go to **EC2 → Load Balancers → Create ALB**.
 2. Name: `gyftr-legal-api-alb`, scheme: **Internet-facing**.
 3. Listener: HTTPS 443 (attach an ACM certificate for `api.legal.your-domain.example`).
-4. Target group: `gyftr-legal-api-tg`, protocol HTTP, port 3001, health check path `/health`, target: the EC2 instance.
+4. Target group: `gyftr-legal-api-tg`, protocol HTTP, port 7978, health check path `/health`, target: the EC2 instance.
 5. In Route53 (or your DNS): add `api.legal.your-domain.example` CNAME → ALB DNS name.
-6. Set `VITE_API_URL=https://api.legal.your-domain.example` in the frontend `.env.local`.
+6. Set `VITE_API_URL=https://api.legal.your-domain.example` in `frontend/.env.local`.
 
 ---
 
@@ -130,7 +130,7 @@ holding DB credentials, and a second private **S3** bucket for draft files.
 2. Keep **Block all public access ON** — served via CloudFront's Origin Access Control only.
 3. Build the frontend:
    ```bash
-   cd /path/to/gyftr-legal
+   cd /path/to/gyftr-legal/frontend
    npm install
    npm run build   # outputs to dist/
    ```
@@ -220,6 +220,7 @@ pm2 restart gyftr-legal-api
 
 **Frontend** (from your laptop):
 ```bash
+cd frontend
 npm run build
 aws s3 sync dist/ s3://gyftr-legal-frontend/ --delete
 aws cloudfront create-invalidation --distribution-id <CF_ID> --paths "/*"
@@ -231,12 +232,12 @@ aws cloudfront create-invalidation --distribution-id <CF_ID> --paths "/*"
 
 | Variable | Where | Value |
 |---|---|---|
-| `VITE_API_URL` | Frontend `.env.local` | `https://api.legal.your-domain.example` |
-| `VITE_COGNITO_USER_POOL_ID` | Frontend `.env.local` | From Cognito console |
-| `VITE_COGNITO_CLIENT_ID` | Frontend `.env.local` | From Cognito console |
-| `VITE_OPENAI_API_KEY` | Frontend `.env.local` | Optional client-supplied fallback (see `backend/.env` `OPENAI_API_KEY` instead) |
-| `VITE_GOOGLE_*` | Frontend `.env.local` | Unrelated to this migration — same Google Drive/Docs/Picker keys as before |
-| `PORT` | Backend `.env` | `3001` |
+| `VITE_API_URL` | `frontend/.env.local` | `https://api.legal.your-domain.example` |
+| `VITE_COGNITO_USER_POOL_ID` | `frontend/.env.local` | From Cognito console |
+| `VITE_COGNITO_CLIENT_ID` | `frontend/.env.local` | From Cognito console |
+| `VITE_OPENAI_API_KEY` | `frontend/.env.local` | Optional client-supplied fallback (see `backend/.env` `OPENAI_API_KEY` instead) |
+| `VITE_GOOGLE_*` | `frontend/.env.local` | Unrelated to this migration — same Google Drive/Docs/Picker keys as before |
+| `PORT` | Backend `.env` | `7978` |
 | `AWS_SECRET_NAME` | Backend `.env` | `gyftr/legal/db` |
 | `AWS_REGION` | Backend `.env` | `ap-south-1` |
 | `COGNITO_USER_POOL_ID` / `COGNITO_CLIENT_ID` / `COGNITO_REGION` | Backend `.env` | Same as frontend |

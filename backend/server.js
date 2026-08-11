@@ -21,7 +21,7 @@ import aiAnalyzeRoutes    from './routes/ai-analyze.js';
 import signDocumentRoutes from './routes/sign-document.js';
 
 const app  = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 7978;
 
 // ── Middleware ─────────────────────────────────────────────────────────────
 app.use(cors({

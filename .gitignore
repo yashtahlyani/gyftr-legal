@@ -11,3 +11,10 @@ dist/
 *.log
 
 .vercel
+
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+backend/node_modules/
+backend/.env

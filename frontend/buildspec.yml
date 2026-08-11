@@ -1,0 +1,54 @@
+version: 0.2
+
+# CodeBuild buildspec — GyfTR Legal Frontend
+# Buildspec path: frontend/buildspec.yml
+# Privileged + ARM/Graviton required.
+# VITE_* must be passed as --build-arg (baked into the JS at build time).
+
+env:
+  shell: bash
+  variables:
+    BASE_IMAGE: 653380732738.dkr.ecr.ap-south-1.amazonaws.com/node-24.18.0-alpine3.24-arm:node-24.18.0-alpine3.24-arm
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 653380732738.dkr.ecr.ap-south-1.amazonaws.com
+      - IMAGE_TAG=v1.$CODEBUILD_BUILD_NUMBER
+      - export FRONTEND_IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_IMAGE_REPO_NAME:$IMAGE_TAG
+      - echo "Frontend image -> $FRONTEND_IMAGE_URI"
+      - |
+        if [ -z "$VITE_COGNITO_USER_POOL_ID" ] || [ -z "$VITE_COGNITO_CLIENT_ID" ]; then
+          echo "ERROR: VITE_COGNITO_USER_POOL_ID / VITE_COGNITO_CLIENT_ID not set"
+          exit 1
+        fi
+
+  build:
+    commands:
+      - echo "Building frontend image..."
+      - |
+        docker build -t $FRONTEND_IMAGE_URI \
+          --build-arg BASE_IMAGE=$BASE_IMAGE \
+          --build-arg VITE_API_URL=$VITE_API_URL \
+          --build-arg VITE_COGNITO_USER_POOL_ID=$VITE_COGNITO_USER_POOL_ID \
+          --build-arg VITE_COGNITO_CLIENT_ID=$VITE_COGNITO_CLIENT_ID \
+          --build-arg VITE_OPENAI_API_KEY=$VITE_OPENAI_API_KEY \
+          --build-arg VITE_GOOGLE_DOCS_API_KEY=$VITE_GOOGLE_DOCS_API_KEY \
+          --build-arg VITE_GOOGLE_DRIVE_API_KEY=$VITE_GOOGLE_DRIVE_API_KEY \
+          --build-arg VITE_GOOGLE_PICKER_API_KEY=$VITE_GOOGLE_PICKER_API_KEY \
+          --build-arg VITE_GOOGLE_OAUTH_CLIENT_ID=$VITE_GOOGLE_OAUTH_CLIENT_ID \
+          ./frontend
+
+  post_build:
+    commands:
+      - echo "Pushing frontend image..."
+      - docker push $FRONTEND_IMAGE_URI
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$FRONTEND_ECS_CONTAINER" "$FRONTEND_IMAGE_URI" > imagedefinitions.json
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json

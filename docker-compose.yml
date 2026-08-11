@@ -1,0 +1,60 @@
+# GyfTR Legal — local / single-host orchestration
+# Frontend and backend are separate images with separate ports/URLs.
+#
+# Usage:
+#   cp .env.example .env   # fill in values
+#   docker compose up --build
+#
+# Frontend → http://localhost:7979
+# Backend  → http://localhost:7978
+
+services:
+  backend:
+    platform: linux/arm64
+    build:
+      context: ./backend
+    image: gyftr-legal-api
+    container_name: gyftr-legal-backend
+    ports:
+      - "7978:7978"
+    env_file:
+      - .env
+    environment:
+      PORT: 7978
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:7979}
+      NODE_ENV: production
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:7978/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  frontend:
+    platform: linux/arm64
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:7978}
+        VITE_COGNITO_USER_POOL_ID: ${VITE_COGNITO_USER_POOL_ID}
+        VITE_COGNITO_CLIENT_ID: ${VITE_COGNITO_CLIENT_ID}
+        VITE_OPENAI_API_KEY: ${VITE_OPENAI_API_KEY:-}
+        VITE_GOOGLE_DOCS_API_KEY: ${VITE_GOOGLE_DOCS_API_KEY:-}
+        VITE_GOOGLE_DRIVE_API_KEY: ${VITE_GOOGLE_DRIVE_API_KEY:-}
+        VITE_GOOGLE_PICKER_API_KEY: ${VITE_GOOGLE_PICKER_API_KEY:-}
+        VITE_GOOGLE_OAUTH_CLIENT_ID: ${VITE_GOOGLE_OAUTH_CLIENT_ID:-}
+    image: gyftr-legal-frontend
+    container_name: gyftr-legal-frontend
+    ports:
+      - "7979:7979"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
