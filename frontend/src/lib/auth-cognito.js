@@ -50,7 +50,12 @@ export function signIn(email, password) {
         try {
           resolve(await getMyProfile())
         } catch (err) {
-          reject(err)
+          // Cognito accepted the credentials; the API behind it did not
+          // answer. Flagged so the UI does not blame the password.
+          const e = new Error(err.message)
+          e.authSucceeded = true
+          e.cause = err
+          reject(e)
         }
       },
       onFailure: reject,
@@ -95,7 +100,14 @@ export function completeNewPasswordChallenge(newPassword) {
         try {
           resolve(await getMyProfile())
         } catch (err) {
-          reject(err)
+          // The password HAS been changed in Cognito at this point — only the
+          // profile fetch that follows it failed. Reporting this as a plain
+          // error made users think the change did not happen, so they went
+          // back and tried the old password, which no longer worked.
+          const e = new Error(err.message)
+          e.passwordWasSet = true
+          e.cause = err
+          reject(e)
         }
       },
       onFailure: reject,

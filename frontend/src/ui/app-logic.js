@@ -538,7 +538,7 @@ function pickRole(el,k){
   el.classList.add("sel");selRole=k;
   const em={legal:"nitin@gyftr.net",finance:"neha@gyftr.net",business:"pankaj.mehta@gyftr.net",compliance:"nikhil@gyftr.net"};
   document.getElementById("loginEmail").value=em[k];
-  const pw=document.getElementById("loginPass");if(pw)pw.value="ChangeMe123!";
+  const pw=document.getElementById("loginPass");if(pw)pw.value="";
 }
 async function doLogin(){
   role=selRole;
@@ -546,12 +546,22 @@ async function doLogin(){
   // Try real Cognito auth — falls back silently if offline or unconfigured
   const email=document.getElementById("loginEmail").value.trim();
   const pass=document.getElementById("loginPass").value.trim();
-  if(email&&pass){
-    try{
-      await cognitoSignIn(email,pass);
-      const result=await _loadFromApi();
-      if(result.ok)showToast("Live data loaded","green");
-    }catch(e){/* offline / not configured — continue with sample data */}
+  // Authentication must succeed before anything is shown. This used to catch
+  // every failure and fall through to the portal anyway, which meant any
+  // visitor to /app.html could click Sign in and be let in regardless of
+  // whether Cognito accepted them.
+  if(!email||!pass){ showToast("Enter your email and password"); return; }
+  try{
+    await cognitoSignIn(email,pass);
+  }catch(e){
+    showToast(e && e.message ? e.message : "Sign in failed");
+    return;
+  }
+  try{
+    const result=await _loadFromApi();
+    if(result.ok)showToast("Live data loaded","green");
+  }catch(e){
+    showToast("Signed in, but could not load data: "+(e&&e.message?e.message:"server unreachable"));
   }
   document.getElementById("uName").textContent=R.name;
   document.getElementById("uRole").textContent=R.role;

@@ -13,7 +13,10 @@
 </head>
 <body>
 <!-- ═══ LOGIN ═══ -->
-<div id="loginScreen">
+<!-- Legacy prototype login card. Never shown: main.js redirects an
+     unauthenticated visitor to /index.html, and hides this on success.
+     Kept only because app-logic.js still references its elements. -->
+<div id="loginScreen" style="display:none">
   <div class="login-wrap">
     <div class="login-logo">
       <!-- GyFTR SVG logo -->
@@ -51,7 +54,7 @@
       </div>
       <div class="login-field">
         <label class="login-lbl">Company email</label>
-        <input class="gx-input" type="email" id="loginEmail" value="nitin@gyftr.net">
+        <input class="gx-input" type="email" id="loginEmail">
       </div>
       <div class="login-field" style="margin-bottom:20px">
         <label class="login-lbl">Password</label>
