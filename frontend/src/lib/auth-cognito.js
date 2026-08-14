@@ -41,6 +41,8 @@ export function signIn(email, password) {
       newPasswordRequired: (userAttributes) => {
         // Cognito hands these back on the challenge but rejects them if you
         // try to resubmit them — they're not user-writable at this step.
+        // Passing `email` again → "Cannot modify an already provided email".
+        delete userAttributes.email
         delete userAttributes.email_verified
         delete userAttributes.email_address
         delete userAttributes.phone_number_verified
