@@ -50,7 +50,12 @@ export function signIn(email, password) {
         try {
           resolve(await getMyProfile())
         } catch (err) {
-          reject(err)
+          // Cognito accepted the credentials; the API behind it did not
+          // answer. Flagged so the UI does not blame the password.
+          const e = new Error(err.message)
+          e.authSucceeded = true
+          e.cause = err
+          reject(e)
         }
       },
       onFailure: reject,
@@ -95,7 +100,14 @@ export function completeNewPasswordChallenge(newPassword) {
         try {
           resolve(await getMyProfile())
         } catch (err) {
-          reject(err)
+          // The password HAS been changed in Cognito at this point — only the
+          // profile fetch that follows it failed. Reporting this as a plain
+          // error made users think the change did not happen, so they went
+          // back and tried the old password, which no longer worked.
+          const e = new Error(err.message)
+          e.passwordWasSet = true
+          e.cause = err
+          reject(e)
         }
       },
       onFailure: reject,
@@ -122,7 +134,17 @@ export function restoreSession() {
       setAuthTokenProvider(freshIdToken)
       try {
         resolve(await getMyProfile())
-      } catch {
+      } catch (err) {
+        // The Cognito session is fine; the API behind it did not answer.
+        // Returning a bare null made main.js bounce the user to the login
+        // page with no explanation, where signing in failed for the same
+        // reason — so it looked like their password had stopped working.
+        // Leave a note for the login page to show.
+        try {
+          sessionStorage.setItem('auth_notice',
+            'You are still signed in, but the portal could not reach the server: ' +
+            (err.message || 'no response') )
+        } catch { /* storage unavailable — the redirect still happens */ }
         resolve(null)
       }
     })

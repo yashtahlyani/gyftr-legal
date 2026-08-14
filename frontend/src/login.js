@@ -99,11 +99,22 @@ window.handleLogin = async function () {
 
   } catch (err) {
     if (btn) { btn.textContent = 'Sign in →'; btn.disabled = false }
-    const msg = (err.message || '').toLowerCase()
+    const raw = err.message || ''
+    const msg = raw.toLowerCase()
     if (msg.includes('incorrect') || msg.includes('not authorized') || msg.includes('invalid')) {
       showError('Incorrect email or password.')
+    } else if (msg.includes('user does not exist')) {
+      showError('No account for that email. Check the address, or contact an admin.')
+    } else if (msg.includes('password attempts exceeded')) {
+      showError('Too many attempts. Wait a few minutes and try again.')
     } else if (msg.includes('no profile linked')) {
       showError('This account has no linked profile. Contact an admin.')
+    } else if (err.authSucceeded) {
+      showError('Your password is correct, but the portal could not reach the server: ' + raw)
+    } else if (msg.includes('did not respond') || msg.includes('could not reach the server')) {
+      // Sign-in itself worked; the API behind it did not answer. Saying
+      // "check your internet" here sent people chasing the wrong problem.
+      showError(raw)
     } else {
       showError('Could not connect to server. Check your internet connection.')
     }
@@ -183,6 +194,17 @@ window.handleSetNewPassword = async function () {
     window.location.href = '/app.html'
   } catch (err) {
     if (btn) { btn.textContent = 'Set password & continue →'; btn.disabled = false }
+    if (err.passwordWasSet) {
+      // Cognito already accepted the new password — only loading the profile
+      // afterwards failed. Do not let them think it did not save and go back
+      // to the old one.
+      showNewPasswordError(
+        'Your new password HAS been saved. We could not load your profile: ' +
+        (err.message || 'the server did not respond') +
+        ' — sign in again with your new password once that is resolved.'
+      )
+      return
+    }
     showNewPasswordError(err.message || 'Could not set password. Try again.')
   }
 }
@@ -194,10 +216,22 @@ document.addEventListener('keydown', e => {
   else window.handleLogin()
 })
 
-// Pre-select Legal on load
 ;(function init() {
-  const emailEl = document.getElementById('loginEmail')
-  const passEl  = document.getElementById('loginPass')
-  if (emailEl && !emailEl.value) emailEl.value = DEMO_EMAILS.legal
-  if (passEl  && !passEl.value)  passEl.value  = 'gyftr@1234'
+  // The demo role pills exist for local development only. They are hidden in
+  // production builds, where clicking one would just pre-fill a password that
+  // is not the user's and fail against Cognito. The login form itself starts
+  // empty — it used to ship pre-filled with nitin@gyftr.net / gyftr@1234,
+  // which meant every real user landed on someone else's credentials.
+  const demoBlock = document.getElementById('demoBlock')
+  if (DEMO_MODE_ALLOWED && demoBlock) demoBlock.style.display = ''
+
+  // Explain a redirect that came from app.html rather than leaving the user
+  // guessing why they were signed out.
+  const notice = sessionStorage.getItem('auth_notice')
+  if (notice) {
+    sessionStorage.removeItem('auth_notice')
+    showError(notice)
+  }
+
+  document.getElementById('loginEmail')?.focus()
 })()
