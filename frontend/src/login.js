@@ -225,5 +225,13 @@ document.addEventListener('keydown', e => {
   const demoBlock = document.getElementById('demoBlock')
   if (DEMO_MODE_ALLOWED && demoBlock) demoBlock.style.display = ''
 
+  // Explain a redirect that came from app.html rather than leaving the user
+  // guessing why they were signed out.
+  const notice = sessionStorage.getItem('auth_notice')
+  if (notice) {
+    sessionStorage.removeItem('auth_notice')
+    showError(notice)
+  }
+
   document.getElementById('loginEmail')?.focus()
 })()

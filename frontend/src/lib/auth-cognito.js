@@ -134,7 +134,17 @@ export function restoreSession() {
       setAuthTokenProvider(freshIdToken)
       try {
         resolve(await getMyProfile())
-      } catch {
+      } catch (err) {
+        // The Cognito session is fine; the API behind it did not answer.
+        // Returning a bare null made main.js bounce the user to the login
+        // page with no explanation, where signing in failed for the same
+        // reason — so it looked like their password had stopped working.
+        // Leave a note for the login page to show.
+        try {
+          sessionStorage.setItem('auth_notice',
+            'You are still signed in, but the portal could not reach the server: ' +
+            (err.message || 'no response') )
+        } catch { /* storage unavailable — the redirect still happens */ }
         resolve(null)
       }
     })
