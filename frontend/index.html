@@ -36,16 +36,20 @@
         <span style="font-size:11px;font-weight:600;color:#7E22CE;background:#F5F3FF;padding:3px 9px;border-radius:6px">📊 Live dashboard</span>
         <span style="font-size:11px;font-weight:600;color:#92400E;background:#FFFBEB;padding:3px 9px;border-radius:6px">🔔 Smart reminders</span>
       </div>
+      <form id="loginForm" onsubmit="handleLogin(event);return false">
       <div class="login-field">
-        <label class="login-lbl">Company email</label>
-        <input class="gx-input" type="email" id="loginEmail" placeholder="you@gyftr.net" autocomplete="username">
+        <label class="login-lbl" for="loginEmail">Company email</label>
+        <input class="gx-input" type="email" id="loginEmail" name="username" placeholder="you@gyftr.net" autocomplete="username">
       </div>
       <div class="login-field" style="margin-bottom:8px">
-        <label class="login-lbl">Password</label>
-        <input class="gx-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+        <label class="login-lbl" for="loginPass">Password
+          <span id="toggleLoginPass" style="float:right;font-size:11px;font-weight:700;color:#4C8A1E;cursor:pointer;user-select:none">Show</span>
+        </label>
+        <input class="gx-input" type="password" id="loginPass" name="current-password" placeholder="••••••••" autocomplete="current-password">
       </div>
       <div id="loginError" style="display:none;color:#DC2626;font-size:12.5px;margin-bottom:12px;font-weight:600"></div>
-      <button class="login-cta" id="loginBtn" onclick="handleLogin()">Sign in &rarr;</button>
+      <button class="login-cta" id="loginBtn" type="submit">Sign in &rarr;</button>
+      </form>
       <div id="demoBlock" style="display:none">
       <div class="login-divider">or sign in as a role</div>
       <div class="role-grid">
@@ -64,13 +68,20 @@
       <div class="login-eyebrow">First-time setup</div>
       <div class="login-title">Set a new password</div>
       <div class="login-sub-txt">Your account needs a password change before you can continue.</div>
+      <form id="newPasswordForm" onsubmit="handleSetNewPassword(event);return false">
+      <!-- Hidden, but it tells the password manager which account this new
+           password belongs to. Without it Chrome may save it against the wrong
+           entry, or not offer to save it at all. -->
+      <input type="text" id="newPasswordUser" name="username" autocomplete="username" hidden aria-hidden="true" readonly>
       <div class="login-field">
-        <label class="login-lbl">New password</label>
-        <input class="gx-input" type="password" id="newPass1" autocomplete="new-password">
+        <label class="login-lbl" for="newPass1">New password
+          <span id="toggleNewPass" style="float:right;font-size:11px;font-weight:700;color:#4C8A1E;cursor:pointer;user-select:none">Show</span>
+        </label>
+        <input class="gx-input" type="password" id="newPass1" name="new-password" autocomplete="new-password">
       </div>
       <div class="login-field" style="margin-bottom:10px">
-        <label class="login-lbl">Confirm new password</label>
-        <input class="gx-input" type="password" id="newPass2" autocomplete="new-password">
+        <label class="login-lbl" for="newPass2">Confirm new password</label>
+        <input class="gx-input" type="password" id="newPass2" name="confirm-password" autocomplete="new-password">
       </div>
       <ul id="pwRules" style="list-style:none;padding:0;margin:0 0 16px;font-size:11.5px;line-height:1.9">
         <li id="rule-len" style="color:#94a59b">&#9675; At least 8 characters</li>
@@ -81,7 +92,8 @@
         <li id="rule-match" style="color:#94a59b">&#9675; Passwords match</li>
       </ul>
       <div id="newPasswordError" style="display:none;color:#DC2626;font-size:12.5px;margin-bottom:12px;font-weight:600"></div>
-      <button class="login-cta" id="newPasswordBtn" onclick="handleSetNewPassword()">Set password &amp; continue &rarr;</button>
+      <button class="login-cta" id="newPasswordBtn" type="submit">Set password &amp; continue &rarr;</button>
+      </form>
     </div>
   </div>
 </div>

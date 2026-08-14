@@ -57,7 +57,8 @@ function enterDemoMode(role) {
   window.location.href = '/app.html'
 }
 
-window.handleLogin = async function () {
+window.handleLogin = async function (ev) {
+  if (ev) ev.preventDefault()
   const btn   = document.getElementById('loginBtn') || document.querySelector('.login-cta')
   const email = document.getElementById('loginEmail')?.value?.trim()
   const pass  = document.getElementById('loginPass')?.value?.trim()
@@ -128,8 +129,29 @@ function showNewPasswordStep() {
   const newCard   = document.getElementById('newPasswordCard')
   if (loginCard) loginCard.style.display = 'none'
   if (newCard)   newCard.style.display   = 'block'
+  // Tell the password manager which account this password is for.
+  const user  = document.getElementById('newPasswordUser')
+  const email = document.getElementById('loginEmail')?.value?.trim()
+  if (user && email) user.value = email
   document.getElementById('newPass1')?.focus()
 }
+
+// Let people see what they typed. Chrome's generated-password overlay left
+// several users unsure whether their own input had registered at all.
+function wireReveal(toggleId, ...fieldIds) {
+  const toggle = document.getElementById(toggleId)
+  if (!toggle) return
+  toggle.addEventListener('click', () => {
+    const showing = toggle.textContent === 'Hide'
+    toggle.textContent = showing ? 'Show' : 'Hide'
+    for (const id of fieldIds) {
+      const el = document.getElementById(id)
+      if (el) el.type = showing ? 'password' : 'text'
+    }
+  })
+}
+wireReveal('toggleLoginPass', 'loginPass')
+wireReveal('toggleNewPass', 'newPass1', 'newPass2')
 
 const PW_RULES = [
   { id: 'rule-len',   label: 'At least 8 characters',            test: v => v.length >= 8 },
@@ -176,7 +198,8 @@ function clearNewPasswordError() {
   if (el) el.style.display = 'none'
 }
 
-window.handleSetNewPassword = async function () {
+window.handleSetNewPassword = async function (ev) {
+  if (ev) ev.preventDefault()
   clearNewPasswordError()
   const v1 = document.getElementById('newPass1')?.value || ''
 
@@ -208,13 +231,6 @@ window.handleSetNewPassword = async function () {
     showNewPasswordError(err.message || 'Could not set password. Try again.')
   }
 }
-
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Enter') return
-  const newCardVisible = document.getElementById('newPasswordCard')?.style.display === 'block'
-  if (newCardVisible) window.handleSetNewPassword()
-  else window.handleLogin()
-})
 
 ;(function init() {
   // The demo role pills exist for local development only. They are hidden in
