@@ -8,11 +8,34 @@ let _token = null
 export const setAuthToken = (t) => { _token = t }
 export const getAuthToken = () => _token
 
+// If the API host accepts the connection but never answers — a security group
+// dropping traffic, an ALB with no healthy target — fetch waits forever. That
+// showed up as a login button stuck on "Signing in…" with no error anywhere.
+// Fail loudly instead, so the real problem is visible.
+const REQUEST_TIMEOUT_MS = 15000
+
 async function apiFetch(path, options = {}) {
   const isFormData = options.body instanceof FormData
   const headers = { ...(isFormData ? {} : { 'Content-Type': 'application/json' }), ...(options.headers || {}) }
   if (_token) headers['Authorization'] = `Bearer ${_token}`
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers })
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  let res
+  try {
+    res = await fetch(`${API_URL}${path}`, { ...options, headers, signal: controller.signal })
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error(`The server did not respond within ${REQUEST_TIMEOUT_MS / 1000}s (${API_URL}). It may be down or unreachable.`)
+    }
+    // A network-level failure here is usually a blocked CORS preflight or a
+    // wrong VITE_API_URL, neither of which fetch reports in any detail.
+    throw new Error(`Could not reach the server at ${API_URL}. Check the API is running and its CORS origin matches this site.`)
+  } finally {
+    clearTimeout(timer)
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error || `API error ${res.status}`)
