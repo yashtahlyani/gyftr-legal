@@ -6,8 +6,13 @@ import {
   updateClientStatus as apiUpdateClientStatus,
   updateTeamStatus as apiUpdateTeamStatus,
   addRemark as apiAddRemark,
+  updateClauseOutcome as apiUpdateClauseOutcome,
+  addDraftNote,
+  sendReminder,
+  getUsers,
 } from '../lib/api.js'
 import { signIn as cognitoSignIn, signOut as cognitoSignOut } from '../lib/auth-cognito.js'
+import { enqueueWrite, flushWriteQueue, getQueuedCount } from '../lib/writeQueue.js'
 
 // Safe ID quoting for onclick attrs: integers pass as-is, UUID strings get single-quoted
 const Q = id => typeof id === 'string' ? `'${id}'` : id
@@ -426,19 +431,31 @@ let AGs=[
 ];
 
 /* ════════ BACKEND API INTEGRATION ════════ */
-// Row → portal-format mapping now lives in src/lib/api.js (loadAllAgreements
-// already returns fully-mapped objects, including `_sbId` for the ones that
-// came from the database) — this just merges them into AGs the same way the
-// old Supabase-backed loader did.
+// Row → portal-format mapping lives in src/lib/api.js (loadAllAgreements
+// returns fully-mapped objects, including `_sbId` for real rows).
+//
+// For a real (non-demo) login, AGs is REPLACED wholesale on every call —
+// never merged with the hardcoded sample rows. Mixing them used to mean a
+// real user permanently saw fake demo agreements (Meridian Finance etc.)
+// alongside their real ones, with no way to tell which was which, and any
+// edit to a sample row would "succeed" (toast and all) while silently never
+// persisting anywhere, since sample rows have no _sbId for the backend
+// calls to target.
+//
+// Returns {ok:true, count} on success (count may legitimately be 0 — a new
+// account with no agreements yet is not a failure) or {ok:false, error} if
+// the request itself failed — callers must treat those differently rather
+// than silently leaving stale data on screen.
 async function _loadFromApi(){
   try{
+    await flushWriteQueue().catch(()=>{});
     const mapped=await loadAllAgreements();
-    if(!mapped||mapped.length===0)return false;
-    // Remove previously-loaded API AGs (UUID string IDs), keep sample AGs (integer IDs)
-    for(let i=AGs.length-1;i>=0;i--){if(typeof AGs[i].id==='string')AGs.splice(i,1);}
+    AGs.length=0;
     mapped.forEach(a=>AGs.push(a));
-    return true;
-  }catch(e){return false;}
+    return {ok:true,count:mapped.length};
+  }catch(e){
+    return {ok:false,error:e?.message||'Could not load agreements'};
+  }
 }
 
 /* ══ GLOBAL STATE ══ */
@@ -470,6 +487,25 @@ function agTeamCls(ag){if(!ag||ag==="On time")return"";if(ag.startsWith("+"))ret
 
 let role="legal",selRole="legal",cfKey="all",remAgId=null;
 let teamFilterVis={L:true,F:true,C:true,B:true};
+// The real logged-in person's profile row (email/name/role/team_code/avatar)
+// for a non-demo login — null in demo mode. Used so authorship in the UI
+// (sign-modal prefill, optimistic history/remark entries, the dashboard
+// greeting) shows the actual person, not the generic per-role name in
+// ROLES[role] — see _setSession below and myName().
+let myProfile=null;
+function myName(){return myProfile?.name||ROLES[role].name;}
+
+// Called by main.js once, right after this module finishes loading, with
+// the resolved role + profile for the session. Setting window.role directly
+// (the old approach) did nothing — this module never read it; every real
+// login was silently treated as role="legal" internally regardless of the
+// person's actual role. This is the fix: it actually updates the module's
+// own `role`/`selRole`/`myProfile` state.
+function _setSession(newRole,profile){
+  role=newRole;
+  selRole=newRole;
+  myProfile=profile||null;
+}
 
 /* ════════ HELPERS ════════ */
 const fd=d=>{if(!d)return"—";const[y,m,dy]=d.split("-");return`${parseInt(dy)} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m-1]}`};
@@ -513,8 +549,8 @@ async function doLogin(){
   if(email&&pass){
     try{
       await cognitoSignIn(email,pass);
-      const loaded=await _loadFromApi();
-      if(loaded)showToast("Live data loaded","green");
+      const result=await _loadFromApi();
+      if(result.ok)showToast("Live data loaded","green");
     }catch(e){/* offline / not configured — continue with sample data */}
   }
   document.getElementById("uName").textContent=R.name;
@@ -753,38 +789,58 @@ document.getElementById("fTeamSt").addEventListener("change",()=>{
 /* My Status dropdown → syncs to Team Review + logs history */
 const MS_TO_TC={"Pending":"tc-none","Under Review":"tc-yellow","Approved":"tc-green","Rejected":"tc-red"};
 const TC_TO_MS={"tc-none":"Pending","tc-yellow":"Under Review","tc-green":"Approved","tc-red":"Rejected"};
-function ums(id,v){
+async function ums(id,v){
   const a=AGs.find(x=>x.id===id);
   const mt=ROLES[role].team;
   const prevTm=a.tm[mt]||"tc-none";
   const prev=TC_TO_MS[prevTm]||"Pending";
+
+  if(prev===v){showToast("Status updated");return;}
+
+  // Optimistic update
   a.ms[mt]=v;
   a.tm[mt]=MS_TO_TC[v]||"tc-none";
-  if(prev!==v){
-    a.hist.push({d:ns(),t:TF[mt],b:ROLES[role].name,f:prev,to:v});
-    showToast(TF[mt]+" → "+v,"green");
-  } else {
-    showToast("Status updated");
-  }
+  a.hist.push({d:ns(),t:TF[mt],b:myName(),f:prev,to:v});
   ftbl();
-  // Persist to the backend (team-status route bundles the history_log entry
-  // server-side, so a single call replaces the old upsert + insert pair)
-  if(a._sbId){
-    apiUpdateTeamStatus(a._sbId,mt,v,prev!==v?prev:null,TF[mt]).catch(()=>{});
+
+  if(!a._sbId){showToast(TF[mt]+" → "+v,"green");return;} // sample/demo row — nothing to persist
+
+  try{
+    await apiUpdateTeamStatus(a._sbId,mt,v,prev,TF[mt]);
+    showToast(TF[mt]+" → "+v,"green");
+  }catch(e){
+    // Roll back — never leave the screen showing a change that wasn't saved.
+    a.ms[mt]=prev;
+    a.tm[mt]=prevTm;
+    a.hist.pop();
+    ftbl();
+    enqueueWrite('teamStatus',[a._sbId,mt,v,prev,TF[mt]],`${a.client} — ${TF[mt]} status → ${v}`);
+    showToast("Couldn't save — will retry automatically","red");
   }
 }
 /* Legal only: change overall agreement status */
-function updateAgreementStatus(id,v){
+async function updateAgreementStatus(id,v){
   const a=AGs.find(x=>x.id===id);
+  const prevSt=a.st;
   const prev=SC[a.st]?SC[a.st].l:a.st;
-  a.st=v;
   const next=SC[v]?SC[v].l:v;
-  a.hist.push({d:ns(),t:"Legal",b:ROLES[role].name,f:prev,to:next});
+
+  // Optimistic update
+  a.st=v;
+  a.hist.push({d:ns(),t:"Legal",b:myName(),f:prev,to:next});
   updateStats();ftbl();
-  showToast("Agreement status → "+next,"green");
-  // Persist to the backend (status route bundles the history_log entry server-side)
-  if(a._sbId){
-    apiUpdateAgreementStatus(a._sbId,v,prev,next).catch(()=>{});
+
+  if(!a._sbId){showToast("Agreement status → "+next,"green");return;}
+
+  try{
+    await apiUpdateAgreementStatus(a._sbId,v,prev,next);
+    showToast("Agreement status → "+next,"green");
+  }catch(e){
+    a.st=prevSt;
+    a.hist.pop();
+    updateStats();ftbl();
+    enqueueWrite('agreementStatus',[a._sbId,v,prev,next],`${a.client} — status → ${next}`);
+    showToast("Couldn't save — will retry automatically","red");
   }
 }
 
@@ -887,21 +943,36 @@ function renderRemFiltered(a){
 }
 function filterRem(){renderRemFiltered(null);}
 function renderRemList(a){renderRemFiltered(a);}
-function submitRem(){
+async function submitRem(){
   const txt=document.getElementById("remInput").value.trim();
   if(!txt)return;
   const a=AGs.find(x=>x.id===remAgId);
   const R=ROLES[role];
   if(!a.remarks)a.remarks=[];
-  a.remarks.push({author:R.name,role:R.role.replace(" Team",""),ts:ns(),txt});
+  const entry={author:myName(),role:R.role.replace(" Team",""),ts:ns(),txt};
+  const prevLu=a.lu;
+
+  // Optimistic update
+  a.remarks.push(entry);
   a.lu=td();
   document.getElementById("remInput").value="";
   renderRemFiltered(a);
   ftbl();
-  showToast("Remark added","green");
-  // Persist to the backend (remarks route also touches agreements.updated_at server-side)
-  if(a._sbId){
-    apiAddRemark(a._sbId,txt).catch(()=>{});
+
+  if(!a._sbId){showToast("Remark added","green");return;}
+
+  try{
+    await apiAddRemark(a._sbId,txt);
+    showToast("Remark added","green");
+  }catch(e){
+    // Roll back — never leave the screen showing a remark that wasn't saved.
+    const idx=a.remarks.indexOf(entry);
+    if(idx>=0)a.remarks.splice(idx,1);
+    a.lu=prevLu;
+    renderRemFiltered(a);
+    ftbl();
+    enqueueWrite('remark',[a._sbId,txt],`${a.client} — remark`);
+    showToast("Couldn't save — will retry automatically","red");
   }
 }
 function closeRem(){document.getElementById("remModal").classList.remove("show");remAgId=null;}
@@ -1167,7 +1238,7 @@ function openSignModal(id){
   const a=AGs.find(x=>x.id===id);
   document.getElementById("signDocName").textContent=a.client;
   document.getElementById("signDocType").textContent=a.type;
-  document.getElementById("signName").value=ROLES[role].name;
+  document.getElementById("signName").value=myName();
   document.getElementById("signDesig").value=ROLES[role].role;
   document.getElementById("signModal").classList.add("show");
 }
@@ -1175,36 +1246,87 @@ function closeSignModal(){
   document.getElementById("signModal").classList.remove("show");
   signAgId=null;
 }
-function confirmSign(){
+async function confirmSign(){
   const name=document.getElementById("signName").value.trim();
   if(!name){showToast("Please enter your full name");return;}
   const desig=document.getElementById("signDesig").value.trim();
   const a=AGs.find(x=>x.id===signAgId);
   const mt=ROLES[role].team;
-  if(!a.signatures)a.signatures={};
+  const prevMs=a.ms[mt],prevTm=a.tm[mt];
   const signTs=ns();
+
+  if(!a.signatures)a.signatures={};
   a.signatures[mt]={name,desig,ts:signTs,role:ROLES[role].role};
-  // log to history
   a.hist.push({d:signTs,t:TF[mt],b:name,f:"Unsigned",to:"Signed"});
-  // also mark their status as Approved
   a.ms[mt]="Approved";
   a.tm[mt]="tc-green";
   closeSignModal();
   ftbl();
   updateStats();
-  // refresh sign bar state
-  const actionArea=document.getElementById("signBarAction");
-  document.getElementById("signBarTitle").textContent="You've signed this agreement";
-  document.getElementById("signBarSub").textContent=`Signed by ${name} on ${signTs}`;
-  actionArea.innerHTML=`<button class="sign-btn signed" disabled>
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    Signed
-  </button>`;
-  showToast("Agreement signed successfully ✓","green");
+
+  const showSignedBar=()=>{
+    const actionArea=document.getElementById("signBarAction");
+    document.getElementById("signBarTitle").textContent="You've signed this agreement";
+    document.getElementById("signBarSub").textContent=`Signed by ${name} on ${signTs}`;
+    actionArea.innerHTML=`<button class="sign-btn signed" disabled>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Signed
+    </button>`;
+  };
+
+  if(!a._sbId){showSignedBar();showToast("Agreement signed successfully ✓","green");return;}
+
+  // This in-app "confirm sign" is a self-attestation (name + designation +
+  // timestamp), not an Adobe Sign envelope — there's no dedicated signature
+  // column for that in this schema, so it's recorded the same durable way
+  // any other team approval is: a team_statuses update (drives the workflow)
+  // plus a remark (audit trail of who signed). The Adobe Sign envelope flow
+  // (POST /api/sign-document) is a separate feature for actually sending a
+  // document out for e-signature — it has no UI entry point yet; see handover notes.
+  try{
+    await apiUpdateTeamStatus(a._sbId,mt,"Approved","Unsigned",TF[mt]);
+    await apiAddRemark(a._sbId,`${name}${desig?` (${desig})`:''} signed on behalf of ${TF[mt]}.`);
+    showSignedBar();
+    showToast("Agreement signed successfully ✓","green");
+  }catch(e){
+    delete a.signatures[mt];
+    a.hist.pop();
+    a.ms[mt]=prevMs;
+    a.tm[mt]=prevTm;
+    ftbl();updateStats();
+    enqueueWrite('teamStatus',[a._sbId,mt,"Approved","Unsigned",TF[mt]],`${a.client} — ${TF[mt]} signature`);
+    showToast("Couldn't save your signature — will retry automatically","red");
+  }
 }
 
 /* ════════ CREATE ════════ */
-function openCreate(){document.getElementById("createModal").classList.add("show")}
+let _spocDirectoryLoaded=false;
+// SPOC dropdowns in app.html ship with exactly one hardcoded option per
+// team (e.g. Legal SPOC only ever offers "Nitin") — the same class of bug
+// as everywhere else identity was hardcoded: if that person changes, the
+// dropdown still can't offer anyone else without an HTML edit. Replaced
+// here with the real directory the first time the Create modal opens for a
+// real (non-demo) session.
+async function populateSpocDropdowns(){
+  if(_spocDirectoryLoaded||!myProfile)return;
+  try{
+    const users=await getUsers();
+    const byTeam={L:[],F:[],B:[],C:[]};
+    users.forEach(u=>{if(byTeam[u.team_code])byTeam[u.team_code].push(u.name);});
+    const fill=(id,names)=>{
+      const el=document.getElementById(id);
+      if(!el)return;
+      const current=el.value;
+      el.innerHTML=`<option value="">Select…</option>`+names.map(n=>`<option${n===current?" selected":""}>${n}</option>`).join("");
+    };
+    fill("fleg",byTeam.L);
+    fill("ffin",byTeam.F);
+    fill("fb",byTeam.B);
+    fill("fcom",byTeam.C);
+    _spocDirectoryLoaded=true;
+  }catch(e){/* keep the hardcoded fallback options if the directory can't be reached */}
+}
+function openCreate(){document.getElementById("createModal").classList.add("show");populateSpocDropdowns();}
 function closeCr(){document.getElementById("createModal").classList.remove("show")}
 async function submitCr(){
   const c=document.getElementById("fc").value.trim(),t=document.getElementById("fty").value;
@@ -1216,27 +1338,47 @@ async function submitCr(){
   const spocB=document.getElementById("fb").value||"—";
   const docLink=document.getElementById("fdoc").value||"";
   const pd=document.getElementById("fpd").value||"";
-  const newAg={
-    id:AGs.length+1,client:c,tag:c.slice(0,4).toUpperCase(),ct:"ct-q",sD:td(),type:t,st:"pending",
+  const isDemo=!!sessionStorage.getItem('demo_role');
+
+  const build=(sbId)=>({
+    id:sbId||(AGs.length+1),_sbId:sbId,client:c,tag:c.slice(0,4).toUpperCase(),ct:"ct-q",sD:td(),type:t,st:"pending",
+    clientStatus:"awaiting",
     tm:{L:"tc-none",F:"tc-none",C:"tc-none",B:"tc-none"},
     ms:{L:"Pending",F:"Pending",C:"Pending",B:"Pending"},
     teamAging:{L:null,F:null,C:null,B:null},
     ag:"On time",ac:"ag-ok",lu:td(),
-    remarks:[{author:R.name,role:R.role.replace(" Team",""),ts:ns(),txt:"Agreement created."}],
+    remarks:[{author:myName(),role:R.role.replace(" Team",""),ts:ns(),txt:"Agreement created."}],
     doc:docLink,sp:{B:spocB,L:spocL,F:spocF,C:spocC},pd,
-    hist:[{d:ns(),t:"Legal",b:R.name,f:"—",to:"Pending"}]
-  };
-  AGs.unshift(newAg);
-  closeCr();updateStats();ftbl();showToast(`Agreement created for ${c}`,"green");
-  ["fc","fty","fpd","fb","fleg","ffin","fcom","fdoc"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=""});
-  // Persist to the backend — the POST /agreements route bundles the default
-  // team_statuses rows, initial history_log entry, and creation remark into
-  // a single transaction server-side, matching what these four separate
-  // Supabase calls used to do.
+    hist:[{d:ns(),t:"Legal",b:myName(),f:"—",to:"Pending"}]
+  });
+
+  // Demo mode never persists (no Cognito token, by design) — stay local-only.
+  if(isDemo){
+    AGs.unshift(build(null));
+    closeCr();updateStats();ftbl();showToast(`Agreement created for ${c}`,"green");
+    ["fc","fty","fpd","fb","fleg","ffin","fcom","fdoc"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=""});
+    return;
+  }
+
+  // Real account: create on the server FIRST. Don't close the modal, clear
+  // the form, or show success until the write actually lands — a failed
+  // create must never look identical to a successful one.
+  const btn=document.querySelector('#createModal .m-foot .gx-btn-dark');
+  if(btn){btn.textContent='Creating…';btn.disabled=true;}
+
   try{
     const data=await apiCreateAgreement({client:c,tag:c.slice(0,4).toUpperCase(),type:t,pd,spocL,spocF,spocB,spocC,doc:docLink});
-    if(data) newAg._sbId=data.id;
-  }catch(e){/* offline — local only */}
+    AGs.unshift(build(data.id));
+    closeCr();updateStats();ftbl();showToast(`Agreement created for ${c}`,"green");
+    ["fc","fty","fpd","fb","fleg","ffin","fcom","fdoc"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=""});
+  }catch(e){
+    // Not queued for auto-retry: replaying a create without the user's
+    // awareness risks a duplicate agreement if it actually landed but the
+    // response was lost. Leave the form filled in and let them retry.
+    showToast("Couldn't create the agreement — check your connection and try again","red");
+  }finally{
+    if(btn){btn.textContent='Create Agreement';btn.disabled=false;}
+  }
 }
 
 /* ════════ CLOSE ON OVERLAY CLICK ════════ */
@@ -1413,13 +1555,23 @@ function renderClientStatusBadge(st,id){
   }
   return `<span class="cs-badge ${c.cls}"><span style="width:5px;height:5px;border-radius:50%;background:${c.dot};display:inline-block"></span>${c.l}</span>`;
 }
-function updateClientStatus(id,v){
+async function updateClientStatus(id,v){
   const a=AGs.find(x=>x.id===id);
+  const prev=a.clientStatus;
+
   a.clientStatus=v;
   ftbl();
-  showToast("Client status → "+CS_CFG[v].l,"green");
-  if(a._sbId){
-    apiUpdateClientStatus(a._sbId,v).catch(()=>{});
+
+  if(!a._sbId){showToast("Client status → "+CS_CFG[v].l,"green");return;}
+
+  try{
+    await apiUpdateClientStatus(a._sbId,v);
+    showToast("Client status → "+CS_CFG[v].l,"green");
+  }catch(e){
+    a.clientStatus=prev;
+    ftbl();
+    enqueueWrite('clientStatus',[a._sbId,v],`${a.client} — client status → ${CS_CFG[v].l}`);
+    showToast("Couldn't save — will retry automatically","red");
   }
 }
 
@@ -1484,19 +1636,36 @@ function toggleDraftDir(agId,idx){
   renderDraftsModal();
   showToast("Direction updated","green");
 }
-function addDraft(){
+async function addDraft(){
   const a=AGs.find(x=>x.id===draftsAgId);
   const date=document.getElementById("dpNewDate").value;
   const note=document.getElementById("dpNewNote").value.trim();
   const dir=document.getElementById("dpNewDir").value;
   if(!date||!note){showToast("Fill date and note");return;}
   if(!a.drafts)a.drafts=[];
-  a.drafts.push({n:"D"+(a.drafts.length+1),date,dir,note});
+  const draftNo="D"+(a.drafts.length+1);
+  const entry={n:draftNo,date,dir,note};
+
+  a.drafts.push(entry);
   document.getElementById("dpNewDate").value="";
   document.getElementById("dpNewNote").value="";
   renderDraftsModal();
   ftbl();
-  showToast("Draft added","green");
+
+  if(!a._sbId){showToast("Draft added","green");return;}
+
+  try{
+    const saved=await addDraftNote(a._sbId,draftNo,dir,note,date);
+    entry._id=saved.id;
+    showToast("Draft added","green");
+  }catch(e){
+    const idx=a.drafts.indexOf(entry);
+    if(idx>=0)a.drafts.splice(idx,1);
+    renderDraftsModal();
+    ftbl();
+    enqueueWrite('draftNote',[a._sbId,draftNo,dir,note,date],`${a.client} — draft ${draftNo}`);
+    showToast("Couldn't save — will retry automatically","red");
+  }
 }
 function closeDraftsModal(){document.getElementById("draftsModal").classList.remove("show");draftsAgId=null;}
 document.getElementById("draftsModal").addEventListener("click",e=>{if(e.target===e.currentTarget)closeDraftsModal();});
@@ -1692,7 +1861,7 @@ function renderDashboard(){
   const body=document.getElementById("dashBody");
   body.innerHTML=`
     <div class="dash-hero">
-      <div class="dash-hero-title">Good ${new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, ${ROLES[role].name.split(" ")[0]} 👋</div>
+      <div class="dash-hero-title">Good ${new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, ${myName().split(" ")[0]} 👋</div>
       <div class="dash-hero-sub">${
         role==="legal"?"Here's where every agreement stands — and what needs your attention today.":
         role==="finance"?"Agreements awaiting your Finance review are highlighted below.":
@@ -1832,13 +2001,13 @@ function renderDashboard(){
     </div>`;
 }
 
-function sendNudge(key,agId,client,btn){
+async function sendNudge(key,agId,client,btn){
   const a=AGs.find(x=>x.id===agId);
   // determine which team to notify — whoever hasn't approved yet
   const teamsToNotify=["L","F","C","B"].filter(t=>a&&a.tm[t]!=="tc-green"&&t!==ROLES[role].team);
   // log the reminder with timestamp + teams
   if(!reminderLog[key])reminderLog[key]=[];
-  reminderLog[key].push({ts:ns(),from:ROLES[role].name,fromRole:role,teams:teamsToNotify,client,agId});
+  reminderLog[key].push({ts:ns(),from:myName(),fromRole:role,teams:teamsToNotify,client,agId});
   sentReminders[key]=true;
   const log=reminderLog[key];
   const cnt=log.length;
@@ -1864,9 +2033,22 @@ function sendNudge(key,agId,client,btn){
     hist.textContent=`✓ Reminded ${cnt}× · last at ${lastTs}`;
   }
 
-  showToast(`Reminder sent for ${client} (×${cnt})`,"green");
   // update notification bar if visible (same session demo)
   checkReminderNotifications();
+
+  if(!a||!a._sbId){showToast(`Reminder sent for ${client} (×${cnt})`,"green");return;}
+
+  try{
+    await sendReminder(a._sbId,role,teamsToNotify,client);
+    showToast(`Reminder sent for ${client} (×${cnt})`,"green");
+  }catch(e){
+    // The in-session log/button state above is left as-is (it's a
+    // low-stakes notification, and re-rendering this row from scratch here
+    // would need more context than this function has) — but the actual
+    // reminder record is queued so it isn't silently lost.
+    enqueueWrite('reminder',[a._sbId,role,teamsToNotify,client],`${client} — reminder`);
+    showToast(`Reminder logged locally — will send once reconnected`,"red");
+  }
 }
 
 function openAnalyse(){
@@ -2250,12 +2432,27 @@ function wordDiff(oldTxt,newTxt){
 }
 
 // Clause outcome select — legal can change per clause
-function setClauseOutcome(agId,clauseNo,val){
+async function setClauseOutcome(agId,clauseNo,val){
   const a=AGs.find(x=>x.id===agId);
   if(!a||!a.clauses)return;
   const c=a.clauses.find(x=>x.no===clauseNo);
-  if(c){c.outcome=val;renderAnMain();}
-  showToast("Outcome updated","green");
+  if(!c)return;
+  const prev=c.outcome;
+
+  c.outcome=val;
+  renderAnMain();
+
+  if(!c._id){showToast("Outcome updated","green");return;} // sample/demo clause — nothing to persist
+
+  try{
+    await apiUpdateClauseOutcome(c._id,val);
+    showToast("Outcome updated","green");
+  }catch(e){
+    c.outcome=prev;
+    renderAnMain();
+    enqueueWrite('clauseOutcome',[c._id,val],`${a.client} — clause ${clauseNo} outcome → ${val}`);
+    showToast("Couldn't save — will retry automatically","red");
+  }
 }
 
 function renderAnContent(a,drafts,clauses){
@@ -2459,7 +2656,7 @@ function anSetCompareB(val){
 // which need functions on window scope when using ES modules
 Object.assign(window, {
   // Auth
-  doLogin, doSignout,
+  doLogin, doSignout, _setSession,
   // Table
   fstat, ftbl, render, gf, updateStats,
   // Team filter

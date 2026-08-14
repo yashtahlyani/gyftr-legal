@@ -19,7 +19,7 @@ create extension if not exists pgcrypto;
 -- id is preserved verbatim from the old Supabase profiles.id (=
 -- old auth.users.id) during migration, so every other table's
 -- foreign key below needs no remapping.
-create table profiles (
+create table if not exists profiles (
   id           uuid primary key default gen_random_uuid(),
   cognito_sub  text unique,        -- filled in by migration/create-cognito-users.js
   email        text unique not null,
@@ -31,7 +31,7 @@ create table profiles (
 );
 
 -- ── AGREEMENTS ──────────────────────────────────────────────
-create table agreements (
+create table if not exists agreements (
   id               uuid default gen_random_uuid() primary key,
   client           text not null,
   tag              text,
@@ -56,7 +56,7 @@ create table agreements (
 -- ── DRAFTS ──────────────────────────────────────────────────
 -- file_path is now an S3 object key (was a Supabase Storage path) —
 -- same string shape (`${agreementId}/${draftNo}${ext}`), different bucket.
-create table drafts (
+create table if not exists drafts (
   id            uuid default gen_random_uuid() primary key,
   agreement_id  uuid references agreements(id) on delete cascade,
   draft_no      text not null,
@@ -70,7 +70,7 @@ create table drafts (
 );
 
 -- ── TEAM STATUSES ───────────────────────────────────────────
-create table team_statuses (
+create table if not exists team_statuses (
   id            uuid default gen_random_uuid() primary key,
   agreement_id  uuid references agreements(id) on delete cascade,
   team_code     text not null check (team_code in ('L','F','C','B')),
@@ -83,7 +83,7 @@ create table team_statuses (
 );
 
 -- ── REMARKS ─────────────────────────────────────────────────
-create table remarks (
+create table if not exists remarks (
   id            uuid default gen_random_uuid() primary key,
   agreement_id  uuid references agreements(id) on delete cascade,
   author_id     uuid references profiles(id),
@@ -94,7 +94,7 @@ create table remarks (
 );
 
 -- ── HISTORY LOG ─────────────────────────────────────────────
-create table history_log (
+create table if not exists history_log (
   id            uuid default gen_random_uuid() primary key,
   agreement_id  uuid references agreements(id) on delete cascade,
   team          text,
@@ -105,7 +105,7 @@ create table history_log (
 );
 
 -- ── CLAUSES (AI analysis output) ────────────────────────────
-create table clauses (
+create table if not exists clauses (
   id            uuid default gen_random_uuid() primary key,
   agreement_id  uuid references agreements(id) on delete cascade,
   clause_no     text,
@@ -118,7 +118,7 @@ create table clauses (
 );
 
 -- ── CLAUSE CHANGES (per draft) ───────────────────────────────
-create table clause_changes (
+create table if not exists clause_changes (
   id          uuid default gen_random_uuid() primary key,
   clause_id   uuid references clauses(id) on delete cascade,
   draft_no    text,
@@ -128,7 +128,7 @@ create table clause_changes (
 );
 
 -- ── REMINDERS ───────────────────────────────────────────────
-create table reminders (
+create table if not exists reminders (
   id            uuid default gen_random_uuid() primary key,
   agreement_id  uuid references agreements(id) on delete cascade,
   from_role     text,
@@ -140,7 +140,7 @@ create table reminders (
 );
 
 -- ── SIGNATURES ──────────────────────────────────────────────
-create table signatures (
+create table if not exists signatures (
   id                  uuid default gen_random_uuid() primary key,
   agreement_id        uuid references agreements(id) on delete cascade,
   signer_name         text,
@@ -156,17 +156,17 @@ create table signatures (
 -- ── INDEXES (not present in the original Supabase schema.sql,
 --    but the RLS-free authorization module now runs one of
 --    these lookups on every request, so add them here) ───────
-create index idx_agreements_created_by   on agreements(created_by);
-create index idx_drafts_agreement_id     on drafts(agreement_id);
-create index idx_team_statuses_agreement on team_statuses(agreement_id);
-create index idx_remarks_agreement_id    on remarks(agreement_id);
-create index idx_history_log_agreement   on history_log(agreement_id);
-create index idx_clauses_agreement_id    on clauses(agreement_id);
-create index idx_clause_changes_clause   on clause_changes(clause_id);
-create index idx_reminders_agreement_id  on reminders(agreement_id);
-create index idx_signatures_agreement_id on signatures(agreement_id);
-create index idx_profiles_cognito_sub    on profiles(cognito_sub);
-create index idx_profiles_email          on profiles(email);
+create index if not exists idx_agreements_created_by   on agreements(created_by);
+create index if not exists idx_drafts_agreement_id     on drafts(agreement_id);
+create index if not exists idx_team_statuses_agreement on team_statuses(agreement_id);
+create index if not exists idx_remarks_agreement_id    on remarks(agreement_id);
+create index if not exists idx_history_log_agreement   on history_log(agreement_id);
+create index if not exists idx_clauses_agreement_id    on clauses(agreement_id);
+create index if not exists idx_clause_changes_clause   on clause_changes(clause_id);
+create index if not exists idx_reminders_agreement_id  on reminders(agreement_id);
+create index if not exists idx_signatures_agreement_id on signatures(agreement_id);
+create index if not exists idx_profiles_cognito_sub    on profiles(cognito_sub);
+create index if not exists idx_profiles_email          on profiles(email);
 
 -- ═══════════════════════════════════════════════════════════
 -- No RLS policies here — see backend/authz.js for the 1:1 port

@@ -1,4 +1,4 @@
-import { signIn } from './lib/auth-cognito.js'
+import { signIn, completeNewPasswordChallenge } from './lib/auth-cognito.js'
 
 const DEMO_EMAILS = {
   legal:      'nitin@gyftr.net',
@@ -64,7 +64,7 @@ window.handleLogin = async function () {
     return
   }
 
-  // Demo role pill selected → bypass Supabase (trust selectedRole over autofilled email)
+  // Demo role pill selected → bypass Cognito entirely (trust selectedRole over autofilled email)
   const demoRole = DEMO_EMAILS[selectedRole]
     ? selectedRole
     : Object.entries(DEMO_EMAILS).find(([, e]) => e === email)?.[0]
@@ -73,14 +73,22 @@ window.handleLogin = async function () {
     return
   }
 
-  // Real email → try Supabase auth
+  // Real email → try Cognito auth
   if (btn) { btn.textContent = 'Signing in…'; btn.disabled = true }
 
   try {
     // Real @gyftr.net account → Cognito. Returns the linked profiles row
-    // (role, team_code, name, avatar) via GET /api/profile/me.
-    const profile = await signIn(email, pass)
-    sessionStorage.setItem('profile', JSON.stringify(profile))
+    // (role, team_code, name, avatar) via GET /api/profile/me — or, for an
+    // account still in FORCE_CHANGE_PASSWORD status, { mustChangePassword: true }.
+    const result = await signIn(email, pass)
+
+    if (result && result.mustChangePassword) {
+      if (btn) { btn.textContent = 'Sign in →'; btn.disabled = false }
+      showNewPasswordStep()
+      return
+    }
+
+    sessionStorage.setItem('profile', JSON.stringify(result))
     window.location.href = '/app.html'
 
   } catch (err) {
@@ -96,8 +104,88 @@ window.handleLogin = async function () {
   }
 }
 
+// ── First-login / forced password reset ─────────────────────────────────
+
+function showNewPasswordStep() {
+  const loginCard = document.querySelector('.login-card:not(#newPasswordCard)')
+  const newCard   = document.getElementById('newPasswordCard')
+  if (loginCard) loginCard.style.display = 'none'
+  if (newCard)   newCard.style.display   = 'block'
+  document.getElementById('newPass1')?.focus()
+}
+
+const PW_RULES = [
+  { id: 'rule-len',   label: 'At least 8 characters',            test: v => v.length >= 8 },
+  { id: 'rule-upper', label: 'One uppercase letter',              test: v => /[A-Z]/.test(v) },
+  { id: 'rule-lower', label: 'One lowercase letter',              test: v => /[a-z]/.test(v) },
+  { id: 'rule-num',   label: 'One number',                        test: v => /[0-9]/.test(v) },
+  { id: 'rule-sym',   label: 'One symbol (!@#$%^&* etc.)',        test: v => /[^A-Za-z0-9]/.test(v) },
+]
+
+function updatePasswordRules() {
+  const v1 = document.getElementById('newPass1')?.value || ''
+  const v2 = document.getElementById('newPass2')?.value || ''
+  let allMet = true
+  for (const rule of PW_RULES) {
+    const met = rule.test(v1)
+    if (!met) allMet = false
+    const el = document.getElementById(rule.id)
+    if (el) {
+      el.style.color = met ? '#15803D' : '#94a59b'
+      el.innerHTML = (met ? '&#10003; ' : '&#9675; ') + rule.label
+    }
+  }
+  const matchEl = document.getElementById('rule-match')
+  const matches = v1.length > 0 && v1 === v2
+  if (!matches) allMet = false
+  if (matchEl) {
+    matchEl.style.color = matches ? '#15803D' : '#94a59b'
+    matchEl.innerHTML = (matches ? '&#10003; ' : '&#9675; ') + 'Passwords match'
+  }
+  return allMet
+}
+
+document.getElementById('newPass1')?.addEventListener('input', updatePasswordRules)
+document.getElementById('newPass2')?.addEventListener('input', updatePasswordRules)
+
+function showNewPasswordError(msg) {
+  const el = document.getElementById('newPasswordError')
+  if (!el) return
+  el.textContent = msg
+  el.style.display = 'block'
+}
+function clearNewPasswordError() {
+  const el = document.getElementById('newPasswordError')
+  if (el) el.style.display = 'none'
+}
+
+window.handleSetNewPassword = async function () {
+  clearNewPasswordError()
+  const v1 = document.getElementById('newPass1')?.value || ''
+
+  if (!updatePasswordRules()) {
+    showNewPasswordError('Password does not meet the requirements above.')
+    return
+  }
+
+  const btn = document.getElementById('newPasswordBtn')
+  if (btn) { btn.textContent = 'Setting password…'; btn.disabled = true }
+
+  try {
+    const profile = await completeNewPasswordChallenge(v1)
+    sessionStorage.setItem('profile', JSON.stringify(profile))
+    window.location.href = '/app.html'
+  } catch (err) {
+    if (btn) { btn.textContent = 'Set password & continue →'; btn.disabled = false }
+    showNewPasswordError(err.message || 'Could not set password. Try again.')
+  }
+}
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter') window.handleLogin()
+  if (e.key !== 'Enter') return
+  const newCardVisible = document.getElementById('newPasswordCard')?.style.display === 'block'
+  if (newCardVisible) window.handleSetNewPassword()
+  else window.handleLogin()
 })
 
 // Pre-select Legal on load

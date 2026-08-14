@@ -25,6 +25,13 @@ export function getMyProfile() {
   return apiFetch('/api/profile/me')
 }
 
+// The real directory — email/name/role/team_code/avatar for every profile.
+// Not yet wired into any dropdown/avatar list in the UI (those are still
+// the hardcoded ROLES map) — available for that migration when it's wanted.
+export function getUsers() {
+  return apiFetch('/api/users')
+}
+
 // ── Agreements ──────────────────────────────────────────────────────────
 export async function loadAllAgreements() {
   const rows = await apiFetch('/api/agreements')
@@ -108,6 +115,16 @@ export function uploadDraft(agreementId, file, draftNo, direction, note) {
   return apiFetch(`/api/agreements/${agreementId}/drafts`, { method: 'POST', body: formData })
 }
 
+// No-file variant, used by the Drafts modal today (it only collects
+// date/direction/note — see backend/routes/drafts.js for why this is a
+// separate route rather than reusing uploadDraft).
+export function addDraftNote(agreementId, draftNo, direction, note, date) {
+  return apiFetch(`/api/agreements/${agreementId}/drafts/note`, {
+    method: 'POST',
+    body: JSON.stringify({ draftNo, direction, note, date }),
+  })
+}
+
 export function getDraftViewURL(draftId) {
   return apiFetch(`/api/drafts/${draftId}/url`).then(r => r.url)
 }
@@ -127,8 +144,10 @@ export function sendReminder(agreementId, fromRole, toTeams, clientName) {
   })
 }
 
-export function getRemindersForTeam(teamCode) {
-  return apiFetch(`/api/reminders?team=${encodeURIComponent(teamCode)}`)
+// Always the caller's own team — the backend derives it from the verified
+// profile, not a query param (see backend/routes/reminders.js).
+export function getMyReminders() {
+  return apiFetch('/api/reminders')
 }
 
 export function dismissReminder(reminderId, teamCode) {

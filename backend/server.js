@@ -24,8 +24,18 @@ const app  = express();
 const PORT = process.env.PORT || 3001;
 
 // ── Middleware ─────────────────────────────────────────────────────────────
+// Explicit origin allowlist — never '*'. The previous default of '*' both
+// defeated the point and is invalid alongside credentials: true anyway.
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL,
+  ...(process.env.NODE_ENV === 'production' ? [] : ['http://localhost:5173', 'http://localhost:4173']),
+].filter(Boolean);
+
 app.use(cors({
-  origin:      process.env.FRONTEND_URL || '*',
+  origin(origin, cb) {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`Origin ${origin} is not allowed`));
+  },
   credentials: true,
 }));
 app.use(express.json());

@@ -54,6 +54,33 @@
         <button class="role-pill" onclick="pickRole(this,'compliance')"><span class="role-name">Nikhil</span><span class="role-desc">Compliance &middot; Review &amp; approve</span></button>
       </div>
     </div>
+
+    <!-- Shown instead of the card above when Cognito returns the
+         newPasswordRequired challenge (first login, or after an admin-forced
+         reset). Hidden by default. -->
+    <div class="login-card" id="newPasswordCard" style="display:none">
+      <div class="login-eyebrow">First-time setup</div>
+      <div class="login-title">Set a new password</div>
+      <div class="login-sub-txt">Your account needs a password change before you can continue.</div>
+      <div class="login-field">
+        <label class="login-lbl">New password</label>
+        <input class="gx-input" type="password" id="newPass1" autocomplete="new-password">
+      </div>
+      <div class="login-field" style="margin-bottom:10px">
+        <label class="login-lbl">Confirm new password</label>
+        <input class="gx-input" type="password" id="newPass2" autocomplete="new-password">
+      </div>
+      <ul id="pwRules" style="list-style:none;padding:0;margin:0 0 16px;font-size:11.5px;line-height:1.9">
+        <li id="rule-len" style="color:#94a59b">&#9675; At least 8 characters</li>
+        <li id="rule-upper" style="color:#94a59b">&#9675; One uppercase letter</li>
+        <li id="rule-lower" style="color:#94a59b">&#9675; One lowercase letter</li>
+        <li id="rule-num" style="color:#94a59b">&#9675; One number</li>
+        <li id="rule-sym" style="color:#94a59b">&#9675; One symbol (!@#$%^&amp;* etc.)</li>
+        <li id="rule-match" style="color:#94a59b">&#9675; Passwords match</li>
+      </ul>
+      <div id="newPasswordError" style="display:none;color:#DC2626;font-size:12.5px;margin-bottom:12px;font-weight:600"></div>
+      <button class="login-cta" id="newPasswordBtn" onclick="handleSetNewPassword()">Set password &amp; continue &rarr;</button>
+    </div>
   </div>
 </div>
 

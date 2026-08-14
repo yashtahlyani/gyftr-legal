@@ -10,6 +10,27 @@ import { requireDraftUploadPermission } from '../authz.js';
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 
+// POST /api/agreements/:agreementId/drafts/note — create a draft entry with
+// no file attached (date/direction/note only). This is what the current
+// Drafts modal UI actually collects — it has no file picker. The
+// multipart file-upload route below is kept for when that UI gets built.
+router.post('/agreements/:agreementId/drafts/note', requireDraftUploadPermission, async (req, res) => {
+  const { agreementId } = req.params;
+  const { draftNo, direction, note, date } = req.body;
+  try {
+    const { rows } = await query(
+      `insert into drafts (agreement_id, draft_no, direction, note, date, created_by)
+       values ($1,$2,$3,$4,coalesce($5,current_date),$6)
+       returning *`,
+      [agreementId, draftNo, direction || 'sent', note || null, date || null, req.profile.id]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('[POST /agreements/:agreementId/drafts/note]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/agreements/:agreementId/drafts — upload a draft file + create its row.
 router.post('/agreements/:agreementId/drafts', requireDraftUploadPermission, upload.single('file'), async (req, res) => {
   const { agreementId } = req.params;
