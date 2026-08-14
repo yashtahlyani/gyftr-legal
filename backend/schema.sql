@@ -10,10 +10,10 @@
 -- Run this once against a fresh RDS database before running
 -- migration/migrate-db.js. Safe to run on an empty DB only —
 -- it does not use IF NOT EXISTS, matching the original schema.sql.
+--
+-- No CREATE EXTENSION here: the app DB user is not a superuser, and
+-- gen_random_uuid() is built into Postgres 13+ (no uuid-ossp/pgcrypto needed).
 -- ═══════════════════════════════════════════════════════════
-
-create extension if not exists "uuid-ossp";
-create extension if not exists pgcrypto;
 
 -- ── PROFILES ──────────────────────────────────────────────────
 -- id is preserved verbatim from the old Supabase profiles.id (=
