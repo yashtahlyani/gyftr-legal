@@ -11,7 +11,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   for draft files, Cognito for auth, Secrets Manager for DB credentials.
   `backend/authz.js` ports every Supabase RLS policy 1:1 into server-side
   authorization, since RDS has no row-level security of its own.
-- `migration/` — one-time, idempotent Supabase → AWS migration scripts:
+- `scripts/` — one-time, idempotent Supabase → AWS migration scripts:
   `migrate-db.js` (data + draft files, preserves every ID),
   `create-cognito-users.js` (creates + links a Cognito account per real
   user), `smoke-test.js` (post-deploy verification).

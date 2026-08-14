@@ -27,16 +27,9 @@ remarks, team review status, reminders, and AI-assisted clause analysis.
 gyftr-legal/
 ├── frontend/                 # Vite app (+ Dockerfile, buildspec)
 │   ├── index.html            # Login page
-│   ├── app.html              # Main portal (all screens)
+│   ├── app.html              # Main portal
 │   ├── vite.config.js
-│   ├── package.json
-│   └── src/
-│       ├── css/style.css
-│       ├── lib/              # api.js, auth-cognito.js, writeQueue.js
-│       ├── data/sample.js
-│       ├── ui/               # app-logic, google-api, ai-analyze, utils
-│       ├── login.js
-│       └── main.js
+│   └── src/                  # css, lib, ui, login.js, main.js
 ├── backend/                  # Express API (+ Dockerfile, buildspec)
 │   ├── server.js
 │   ├── db.js
@@ -46,7 +39,8 @@ gyftr-legal/
 │   ├── routes/
 │   └── schema.sql
 ├── docker-compose.yml
-├── migration/                # Cognito / ops scripts
+├── scripts/                  # Operational AWS scripts
+│   ├── audit-access.js
 │   ├── create-cognito-users.js
 │   ├── force-password-reset.js
 │   ├── migrate-email-domain.js
@@ -55,7 +49,10 @@ gyftr-legal/
 │   ├── aws-setup.md
 │   ├── HANDOVER.md
 │   └── GYFTR-LEGAL-HANDOVER.md
-└── package.json              # Convenience scripts (dev:frontend / dev:backend)
+├── DEPLOY.md                 # Release runbook
+└── docs/
+    ├── KT.md
+    └── reference/
 ```
 
 ## Setup — Step by Step
@@ -80,44 +77,38 @@ Get these from the AWS Cognito console and your backend's ALB/DNS — see
 ### Step 3 — Provision AWS + set up the database
 
 Follow `infra/aws-setup.md` in order (RDS → Secrets Manager → Cognito → S3
-drafts bucket → EC2 → ALB → S3 + CloudFront). `backend/schema.sql` is applied
+drafts bucket → EC2 → ALB → S3 + CloudFront). `backend/schema.sql` applies
 idempotently on API start.
 
 ### Step 4 — Migrate or seed users
 
-For a fresh environment with no existing data, create the team profiles
-directly in RDS and run `migration/create-cognito-users.js` to create their
-Cognito accounts. See `infra/aws-setup.md` and `infra/HANDOVER.md`.
+For a fresh environment, create the team profiles directly in RDS and run
+`scripts/create-cognito-users.js` to create their Cognito accounts. The
+portal does not auto-create profiles: a Cognito user with no `profiles` row
+gets a visible "No profile linked to this account" error rather than silently
+being given default access.
+
+To deploy a new release, follow **[`DEPLOY.md`](DEPLOY.md)**.
 
 ### Step 5 — Start frontend
 ```bash
 npm run dev:frontend
 ```
-Open http://localhost:7979. Demo-mode role pills work only in Vite **dev**
-builds (`import.meta.env.DEV`) — production always uses Cognito.
+Open http://localhost:7979. Demo role pills work only in Vite **dev** builds;
+production always uses Cognito.
 
 ### Step 6 — Run the backend locally
 ```bash
-cp backend/.env.example backend/.env   # fill in RDS/Cognito/S3 values
-npm run dev:backend                    # API on :7978
+cp backend/.env.example backend/.env
+npm run dev:backend    # API on :7978
 ```
-
-## Docker (both services)
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-- Frontend: https://legal.gyftr.net (local `:7979`)
-- Backend:  https://legal-api.gyftr.net (local `:7978`)
 
 ## Prototype vs Production Mode
 
-**Demo mode** (role-picker login, no password) still exists for quick demos
-— it uses hardcoded sample data from `src/data/sample.js` and never touches
-the real database. Logging in with a real `@gyftr.net` email routes through
-Cognito and the live backend instead.
+**Demo mode** (role-picker login, no password) exists in `npm run dev` only.
+It uses hardcoded sample data from `src/data/sample.js` and never touches the
+real database. `vite build` strips it, so the deployed portal always requires a
+real Cognito login. Both `@gyftr.net` and `@gyftr.com` addresses are accepted.
 
 ## APIs Used
 

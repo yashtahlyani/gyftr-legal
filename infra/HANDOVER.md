@@ -43,7 +43,7 @@ cd gyftr-legal
 
 npm install                                    # frontend
 cd backend   && npm install && cd ..           # backend
-cd migration && npm install && cd ..           # migration scripts
+cd scripts && npm install && cd ..           # migration scripts
 ```
 
 ### 2. Provision AWS
@@ -51,21 +51,15 @@ cd migration && npm install && cd ..           # migration scripts
 Follow **`infra/aws-setup.md`** in order: RDS → Secrets Manager → Cognito →
 S3 (drafts bucket) → EC2 → ALB → S3 + CloudFront (frontend).
 
-### 3. Migrate data from Supabase → RDS
+### 3. Database schema
 
-```bash
-cd migration
-export SUPABASE_URL=https://aiaeruajrbrxkoaqzdpp.supabase.co
-export SUPABASE_PAT=<personal-access-token>   # from whoever holds Supabase access
-export RDS_HOST=... RDS_USER=gyftr_admin RDS_PASSWORD=... RDS_DB=gyftr_legal
-export DRAFTS_BUCKET=gyftr-legal-drafts
-export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_REGION=ap-south-1
-node migrate-db.js
-```
+The migration off the old stack is **done** and the import script has been
+removed — the portal is AWS-only, and there is no data to bring across any
+more. `backend/schema.sql` is applied automatically when the API starts; it is
+idempotent, so restarting is always safe.
 
-Copies every agreement, draft (row + file), team status, remark, history
-entry, clause, clause change, reminder, signature, and profile — preserving
-every ID. Safe to re-run.
+If you ever need the historical importer, it is in git history
+(`git log --diff-filter=D -- scripts/migrate-db.js`).
 
 ### 4. Create Cognito accounts for the 4 real users
 
@@ -104,12 +98,10 @@ gyftr-legal-users → Users → (user) → Reset password**, or:
 aws cognito-idp admin-reset-user-password --user-pool-id <pool-id> --username <email>
 ```
 
-**Demo mode still exists** — the 4 role pills on the login page (Legal /
-Finance / Business / Compliance) log straight in with sample data and no
-password, exactly like before the migration. This was kept intentionally
-(see "Decisions made during the migration" below) — it's useful for demos,
-but it never touches real RDS data, so don't confuse it with a real account
-when troubleshooting "why don't I see the real agreements."
+**Demo mode is development-only.** The 4 role pills on the login page log in
+with sample data and no password, but that path is now gated on
+`import.meta.env.DEV`, so `vite build` compiles it out completely and it does
+not exist in the deployed portal. Use `npm run dev` locally if you want it.
 
 ---
 
@@ -141,13 +133,13 @@ comment at the top of `backend/routes/clauses.js` for the full note.
 
 | Task | Where |
 |---|---|
-| Add/remove a user | Add a `profiles` row (`insert into profiles (email, name, role, team_code) values (...)`), then re-run `migration/create-cognito-users.js` — it only processes rows without a `cognito_sub` |
+| Add/remove a user | Add a `profiles` row (`insert into profiles (email, name, role, team_code) values (...)`), then re-run `scripts/create-cognito-users.js` — it only processes rows without a `cognito_sub` |
 | Change what a role can do | `backend/authz.js` — one function per rule, all in one file |
 | Add a new API field to an existing table | Add the column in `backend/schema.sql` **and** run the matching `ALTER TABLE` on the live RDS DB (schema.sql itself isn't re-run on an existing DB), then thread it through the relevant `backend/routes/*.js` and `src/lib/api.js` |
 | Add a new table/resource | New file in `backend/routes/`, register it in `backend/server.js`, add the matching functions to `src/lib/api.js` |
 | Make "nudges" (reminders) persist across refresh | Currently reminders are DB-backed on the server (`backend/routes/reminders.js`, ported for RLS parity) but the frontend's `sendNudge` in `src/ui/app-logic.js` never calls it — same as before the migration. Wire it up by calling `sendReminder()` from `src/lib/api.js` inside `sendNudge` |
 | Make drafts (Drafts modal) persist across refresh | Same situation — `backend/routes/drafts.js` + S3 storage exist and work, but `addDraft`/`toggleDraftDir` in `app-logic.js` are still local-only, matching pre-migration behavior. Wire `uploadDraft()`/`updateDraftDirection()` from `src/lib/api.js` in if/when you want real file persistence there |
-| Change the AI model/prompt | `backend/routes/ai-analyze.js` (this is what's live) — `supabase/functions/ai-analyze` and `supabase/functions/analyse-drafts` (Claude-based) are old, unused, kept only for reference |
+| Change the AI model/prompt | `backend/routes/ai-analyze.js` (this is what's live). The old Supabase Edge Functions are deleted; the unported Claude-based prompt is kept at `docs/reference/analyse-drafts-unported.ts` |
 | Rotate the OpenAI/Adobe keys | Update `backend/.env` on the EC2 instance, then `pm2 restart gyftr-legal-api` |
 | Rotate DB credentials | Update the `gyftr/legal/db` secret in Secrets Manager — the backend re-reads it on every restart, no code change needed |
 
@@ -155,10 +147,13 @@ comment at the top of `backend/routes/clauses.js` for the full note.
 
 ## Decisions made during the migration (and why)
 
-- **Demo-mode login was kept**, alongside real Cognito auth, per an explicit
-  choice made during the migration — it bypasses auth entirely and only ever
-  shows sample/local data, never real RDS data, so it's not a security hole
-  against production data.
+- **Demo-mode login was kept for development only.** It was originally left
+  enabled in production on the grounds that it only shows sample data. That was
+  wrong on two counts: entering any address in `DEMO_EMAILS` with any password
+  logged you into the portal without Cognito, and `app-logic.js` reads
+  `demo_role` directly — when set, creating an agreement shows a success toast
+  and never writes to the server, so a stale flag silently discarded a real
+  user's work. It is now compiled out of production builds.
 - **`api/ai-analyze.js` (the old Vercel Function) and
   `supabase/functions/sign-document`/`ai-analyze` (the old Supabase Edge
   Functions) were removed** and their logic ported into

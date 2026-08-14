@@ -1,10 +1,13 @@
 {
-  "name": "gyftr-legal-migration",
+  "name": "gyftr-legal-scripts",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "audit-access": "node audit-access.js",
     "create-cognito-users": "node create-cognito-users.js",
+    "force-password-reset": "node force-password-reset.js",
+    "migrate-email-domain": "node migrate-email-domain.js",
     "smoke-test": "node smoke-test.js"
   },
   "dependencies": {
