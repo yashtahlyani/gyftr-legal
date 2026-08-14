@@ -5,7 +5,7 @@
  *
  * Usage:
  *   cd migration && npm install
- *   export SMOKE_API_URL=https://api.your-domain.example
+ *   export SMOKE_API_URL=https://legal-api.gyftr.net
  *   export SMOKE_TOKEN=<a real Cognito ID token>   # see below for how to get one
  *   node smoke-test.js
  *
@@ -23,7 +23,7 @@ const API_URL = process.env.SMOKE_API_URL;
 const TOKEN   = process.env.SMOKE_TOKEN;
 
 if (!API_URL) {
-  console.error('SMOKE_API_URL env var is required (e.g. https://api.your-domain.example)');
+  console.error('SMOKE_API_URL env var is required (e.g. https://legal-api.gyftr.net)');
   process.exit(1);
 }
 

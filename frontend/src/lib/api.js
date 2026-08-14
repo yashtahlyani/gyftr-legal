@@ -2,7 +2,7 @@
 // All data access now goes through the Express backend (EC2 behind an ALB).
 // Auth token is set by src/lib/auth-cognito.js after a Cognito login.
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7978'
 
 let _token = null
 export const setAuthToken = (t) => { _token = t }
@@ -23,6 +23,13 @@ async function apiFetch(path, options = {}) {
 // ── Profile ─────────────────────────────────────────────────────────────
 export function getMyProfile() {
   return apiFetch('/api/profile/me')
+}
+
+// The real directory — email/name/role/team_code/avatar for every profile.
+// Not yet wired into any dropdown/avatar list in the UI (those are still
+// the hardcoded ROLES map) — available for that migration when it's wanted.
+export function getUsers() {
+  return apiFetch('/api/users')
 }
 
 // ── Agreements ──────────────────────────────────────────────────────────
@@ -108,6 +115,16 @@ export function uploadDraft(agreementId, file, draftNo, direction, note) {
   return apiFetch(`/api/agreements/${agreementId}/drafts`, { method: 'POST', body: formData })
 }
 
+// No-file variant, used by the Drafts modal today (it only collects
+// date/direction/note — see backend/routes/drafts.js for why this is a
+// separate route rather than reusing uploadDraft).
+export function addDraftNote(agreementId, draftNo, direction, note, date) {
+  return apiFetch(`/api/agreements/${agreementId}/drafts/note`, {
+    method: 'POST',
+    body: JSON.stringify({ draftNo, direction, note, date }),
+  })
+}
+
 export function getDraftViewURL(draftId) {
   return apiFetch(`/api/drafts/${draftId}/url`).then(r => r.url)
 }
@@ -127,8 +144,10 @@ export function sendReminder(agreementId, fromRole, toTeams, clientName) {
   })
 }
 
-export function getRemindersForTeam(teamCode) {
-  return apiFetch(`/api/reminders?team=${encodeURIComponent(teamCode)}`)
+// Always the caller's own team — the backend derives it from the verified
+// profile, not a query param (see backend/routes/reminders.js).
+export function getMyReminders() {
+  return apiFetch('/api/reminders')
 }
 
 export function dismissReminder(reminderId, teamCode) {
@@ -139,10 +158,11 @@ export function dismissReminder(reminderId, teamCode) {
 }
 
 // ── AI clause analysis ───────────────────────────────────────────────────
-export function analyzeWithAI(agreement, apiKey, docText) {
+export function analyzeWithAI(agreement, docText) {
+  // No apiKey argument by design — the OpenAI key is server-side only.
   return apiFetch('/api/ai-analyze', {
     method: 'POST',
-    body: JSON.stringify({ agreement, apiKey, docText }),
+    body: JSON.stringify({ agreement, docText }),
   })
 }
 

@@ -30,13 +30,14 @@ router.post('/reminders', async (req, res) => {
   }
 });
 
-// GET /api/reminders?team=L
+// GET /api/reminders — reminders addressed to the caller's own team.
+// Team comes from the verified profile, not a client-supplied query param —
+// a client could otherwise pass ?team=L and read another team's reminders.
 router.get('/reminders', async (req, res) => {
-  const { team } = req.query;
   try {
     const { rows } = await query(
       `select * from reminders where $1 = any(to_teams) order by sent_at desc`,
-      [team]
+      [req.profile.team_code]
     );
     res.json(rows);
   } catch (err) {

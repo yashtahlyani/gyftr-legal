@@ -24,8 +24,22 @@ const app  = express();
 const PORT = process.env.PORT || 7978;
 
 // ── Middleware ─────────────────────────────────────────────────────────────
+// Explicit origin allowlist — never '*'. The previous default of '*' both
+// defeated the point and is invalid alongside credentials: true anyway.
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL,
+  ...(process.env.NODE_ENV === 'production' ? [] : [
+    'http://localhost:7979',
+    'http://localhost:5173',
+    'http://localhost:4173',
+  ]),
+].filter(Boolean);
+
 app.use(cors({
-  origin:      process.env.FRONTEND_URL || '*',
+  origin(origin, cb) {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`Origin ${origin} is not allowed`));
+  },
   credentials: true,
 }));
 app.use(express.json());
@@ -33,14 +47,16 @@ app.use(express.json());
 // ── Health check (no auth needed — used by the ALB target group) ───────────
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
-// ── AI analysis stays unauthenticated, matching the old Vercel Function
-//    (api/ai-analyze.js had no auth check either — this keeps demo-mode
-//    login, which has no Cognito token, able to use it against sample data). ─
-app.use('/api', aiAnalyzeRoutes);
-
-// ── Everything else under /api requires a valid Cognito token + a linked profile ─
+// ── Everything under /api requires a valid Cognito token + a linked profile ─
+//
+// /api/ai-analyze used to be mounted ABOVE this line, unauthenticated, so that
+// demo mode could reach it. That was survivable only while the caller supplied
+// their own OpenAI key. The key is now server-side, so an open endpoint means
+// anyone on the internet can spend GyFTR's OpenAI credits. Demo mode losing AI
+// analysis is the correct trade.
 app.use('/api', requireAuth, loadProfile);
 
+app.use('/api', aiAnalyzeRoutes);
 app.use('/api/agreements', agreementsRoutes);
 app.use('/api', draftsRoutes);
 app.use('/api', remarksRoutes);
@@ -57,6 +73,7 @@ async function start() {
 }
 
 start().catch(err => {
-  console.error('[server] Failed to start:', err.message);
+  console.error('[server] Failed to start:', err.message || err);
+  if (err.stack) console.error(err.stack);
   process.exit(1);
 });

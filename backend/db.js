@@ -4,6 +4,8 @@
 
 import pg from 'pg';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import { readFile } from 'fs/promises';
+import { fileURLToPath } from 'url';
 
 const { Pool } = pg;
 let pool;
@@ -30,8 +32,26 @@ async function getDbCredentials() {
   };
 }
 
+// Applies schema.sql on every boot. Every statement in that file is
+// IF NOT EXISTS, so this is a no-op against an already-current database —
+// deploying is just a restart, nobody has to remember to hand-run psql.
+async function applySchema() {
+  const schemaPath = fileURLToPath(new URL('./schema.sql', import.meta.url));
+  const sql = await readFile(schemaPath, 'utf8');
+  await pool.query(sql);
+  console.log('[db] Schema applied (idempotent)');
+}
+
 export async function initDb() {
   const creds = await getDbCredentials();
+
+  if (!creds.host || !creds.database || !creds.user || !creds.password) {
+    throw new Error(
+      'Database not configured. Set DB_HOST, DB_NAME, DB_USER, DB_PASSWORD ' +
+      '(or AWS_SECRET_NAME for Secrets Manager).'
+    );
+  }
+
   pool = new Pool({
     ...creds,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
@@ -42,6 +62,7 @@ export async function initDb() {
   const client = await pool.connect();
   console.log('[db] Connected to RDS Postgres:', creds.host);
   client.release();
+  await applySchema();
 }
 
 export function query(sql, params) {

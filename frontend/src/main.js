@@ -7,8 +7,18 @@ import {
   showToast, renderPromiseBadge, wordDiff, promiseDaysLeft
 } from './ui/utils.js'
 
-// ── 0. Auth check — supports both Supabase session and demo mode ─────────────
-const demoRole = sessionStorage.getItem('demo_role')
+// ── 0. Auth check — Cognito session, plus demo mode in development only ──────
+// The demo_role branch skips authentication entirely, so it is compiled out of
+// production builds: otherwise anyone could set sessionStorage.demo_role in
+// devtools and load the app shell without signing in.
+const demoRole = import.meta.env.DEV ? sessionStorage.getItem('demo_role') : null
+
+// Clear any stale demo flag whenever this is not a demo session. app-logic.js
+// reads sessionStorage.demo_role directly, and when it is set, creating an
+// agreement shows a success toast but deliberately never writes to the server.
+// A leftover flag from an earlier demo login therefore made a real user's work
+// silently vanish — one of the reported "data is not being stored" cases.
+if (!demoRole) sessionStorage.removeItem('demo_role')
 let savedRole  = demoRole
 let profile    = null
 
@@ -48,8 +58,14 @@ import('./ui/ai-analyze.js').catch(err => console.error('ai-analyze load failed:
 // ── 3. Load app-logic (all screens, modals, render) ──────────────────────────
 import('./ui/app-logic.js').then(() => {
 
-  window.role    = savedRole
-  window.selRole = savedRole
+  // Actually sets app-logic.js's internal role/profile state — the old
+  // `window.role = savedRole` here did nothing, since app-logic.js declares
+  // its own module-scoped `role` and never reads window.role. Every real
+  // login was silently treated internally as role="legal" regardless of
+  // the person's actual role. See _setSession in app-logic.js.
+  if (typeof window._setSession === 'function') {
+    window._setSession(savedRole, demoRole ? null : profile)
+  }
 
   // ── Update topbar with name / role / avatar ───────────────────────────────
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val }
@@ -91,20 +107,28 @@ import('./ui/app-logic.js').then(() => {
   }
 
   // ── Load live data from the API if authenticated (not demo mode) ──────────
+  // _loadFromApi replaces AGs entirely with real data (never merges with the
+  // sample rows — see the comment on _loadFromApi itself) and returns
+  // {ok, count} or {ok:false, error}. A failed load must be visible, not
+  // silently left showing whatever was on screen before (which, for a real
+  // account, would otherwise be nothing but the hardcoded demo fixtures).
   if (!demoRole && typeof window._loadFromApi === 'function') {
-    AGs.length = 0
-    window._loadFromApi().then(loaded => {
-      if (loaded) {
-        if (typeof window.updateStats === 'function') window.updateStats()
-        if (typeof window.render === 'function' && typeof window.gf === 'function') {
-          window.render(window.gf())
-        }
-        if (typeof window.checkReminderNotifications === 'function') {
-          window.checkReminderNotifications()
-        }
-        showToast('Live data loaded', 'green')
+    window._loadFromApi().then(result => {
+      if (typeof window.updateStats === 'function') window.updateStats()
+      if (typeof window.render === 'function' && typeof window.gf === 'function') {
+        window.render(window.gf())
       }
-    }).catch(() => {})
+      if (typeof window.checkReminderNotifications === 'function') {
+        window.checkReminderNotifications()
+      }
+      if (result.ok) {
+        showToast(result.count === 0 ? 'No agreements yet' : 'Live data loaded', 'green')
+      } else {
+        showToast('Could not load your agreements — check your connection and refresh', 'red')
+      }
+    }).catch(() => {
+      showToast('Could not load your agreements — check your connection and refresh', 'red')
+    })
   }
 
 }).catch(err => {

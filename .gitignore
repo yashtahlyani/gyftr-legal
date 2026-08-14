@@ -2,6 +2,8 @@ node_modules/
 dist/
 .env.local
 .env
+frontend/.env
+backend/.env
 *.local
 .DS_Store
 
@@ -11,10 +13,3 @@ dist/
 *.log
 
 .vercel
-
-frontend/node_modules/
-frontend/dist/
-frontend/.env
-frontend/.env.local
-backend/node_modules/
-backend/.env

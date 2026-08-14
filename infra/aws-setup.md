@@ -50,7 +50,7 @@ holding DB credentials, and a second private **S3** bucket for draft files.
 5. User pool name: `gyftr-legal-users`.
 6. App client name: `gyftr-legal-web`, type: **Public client**, no secret.
 7. Note the **User Pool ID** (e.g. `ap-south-1_AbcXYZ`) and **Client ID**.
-8. Put these in `frontend/.env.local`:
+8. Put these in the frontend `.env.local`:
    ```
    VITE_COGNITO_USER_POOL_ID=ap-south-1_AbcXYZ
    VITE_COGNITO_CLIENT_ID=...
@@ -98,7 +98,7 @@ holding DB credentials, and a second private **S3** bucket for draft files.
    #   COGNITO_CLIENT_ID=...
    #   COGNITO_REGION=ap-south-1
    #   DRAFTS_BUCKET=gyftr-legal-drafts
-   #   FRONTEND_URL=https://legal.gyftr.net
+   #   FRONTEND_URL=https://legal.your-domain.example
    #   OPENAI_API_KEY=...
    #   ADOBE_CLIENT_ID=...
    #   ADOBE_CLIENT_SECRET=...
@@ -117,10 +117,10 @@ holding DB credentials, and a second private **S3** bucket for draft files.
 
 1. Go to **EC2 → Load Balancers → Create ALB**.
 2. Name: `gyftr-legal-api-alb`, scheme: **Internet-facing**.
-3. Listener: HTTPS 443 (attach an ACM certificate for `legal-api.gyftr.net`).
+3. Listener: HTTPS 443 (attach an ACM certificate for `api.legal.your-domain.example`).
 4. Target group: `gyftr-legal-api-tg`, protocol HTTP, port 7978, health check path `/health`, target: the EC2 instance.
-5. In Route53 (or your DNS): add `legal-api.gyftr.net` CNAME → ALB DNS name.
-6. Set `VITE_API_URL=https://legal-api.gyftr.net` in `frontend/.env.local`.
+5. In Route53 (or your DNS): add `api.legal.your-domain.example` CNAME → ALB DNS name.
+6. Set `VITE_API_URL=https://api.legal.your-domain.example` in the frontend `.env.local`.
 
 ---
 
@@ -130,7 +130,7 @@ holding DB credentials, and a second private **S3** bucket for draft files.
 2. Keep **Block all public access ON** — served via CloudFront's Origin Access Control only.
 3. Build the frontend:
    ```bash
-   cd /path/to/gyftr-legal/frontend
+   cd /path/to/gyftr-legal
    npm install
    npm run build   # outputs to dist/
    ```
@@ -147,8 +147,8 @@ holding DB credentials, and a second private **S3** bucket for draft files.
      client-side router), you generally don't need a catch-all → index.html
      rewrite the way a React Router SPA would — `index.html` and `app.html`
      are both real files in `dist/`.
-   - Attach an ACM certificate for `legal.gyftr.net`.
-6. In Route53: add `legal.gyftr.net` CNAME → CloudFront domain.
+   - Attach an ACM certificate for `legal.your-domain.example`.
+6. In Route53: add `legal.your-domain.example` CNAME → CloudFront domain.
 
 ---
 
@@ -202,7 +202,7 @@ already linked.
 Finally, verify the deploy:
 
 ```bash
-export SMOKE_API_URL=https://legal-api.gyftr.net
+export SMOKE_API_URL=https://api.legal.your-domain.example
 export SMOKE_TOKEN=<a real Cognito ID token — see migration/smoke-test.js for how to get one>
 node smoke-test.js
 ```
@@ -220,7 +220,6 @@ pm2 restart gyftr-legal-api
 
 **Frontend** (from your laptop):
 ```bash
-cd frontend
 npm run build
 aws s3 sync dist/ s3://gyftr-legal-frontend/ --delete
 aws cloudfront create-invalidation --distribution-id <CF_ID> --paths "/*"
@@ -232,17 +231,17 @@ aws cloudfront create-invalidation --distribution-id <CF_ID> --paths "/*"
 
 | Variable | Where | Value |
 |---|---|---|
-| `VITE_API_URL` | `frontend/.env.local` | `https://legal-api.gyftr.net` |
-| `VITE_COGNITO_USER_POOL_ID` | `frontend/.env.local` | From Cognito console |
-| `VITE_COGNITO_CLIENT_ID` | `frontend/.env.local` | From Cognito console |
-| `VITE_OPENAI_API_KEY` | `frontend/.env.local` | Optional client-supplied fallback (see `backend/.env` `OPENAI_API_KEY` instead) |
-| `VITE_GOOGLE_*` | `frontend/.env.local` | Unrelated to this migration — same Google Drive/Docs/Picker keys as before |
+| `VITE_API_URL` | Frontend `.env.local` | `https://api.legal.your-domain.example` |
+| `VITE_COGNITO_USER_POOL_ID` | Frontend `.env.local` | From Cognito console |
+| `VITE_COGNITO_CLIENT_ID` | Frontend `.env.local` | From Cognito console |
+| `VITE_OPENAI_API_KEY` | Frontend `.env.local` | Optional client-supplied fallback (see `backend/.env` `OPENAI_API_KEY` instead) |
+| `VITE_GOOGLE_*` | Frontend `.env.local` | Unrelated to this migration — same Google Drive/Docs/Picker keys as before |
 | `PORT` | Backend `.env` | `7978` |
 | `AWS_SECRET_NAME` | Backend `.env` | `gyftr/legal/db` |
 | `AWS_REGION` | Backend `.env` | `ap-south-1` |
 | `COGNITO_USER_POOL_ID` / `COGNITO_CLIENT_ID` / `COGNITO_REGION` | Backend `.env` | Same as frontend |
 | `DRAFTS_BUCKET` | Backend `.env` | `gyftr-legal-drafts` |
-| `FRONTEND_URL` | Backend `.env` | `https://legal.gyftr.net` (CORS) |
+| `FRONTEND_URL` | Backend `.env` | `https://legal.your-domain.example` (CORS) |
 | `OPENAI_API_KEY` | Backend `.env` | AI clause analysis (unrelated to this migration, kept as-is) |
 | `ADOBE_CLIENT_ID` / `ADOBE_CLIENT_SECRET` | Backend `.env` | E-signature (unrelated to this migration, kept as-is) |
 

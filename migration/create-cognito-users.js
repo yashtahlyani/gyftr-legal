@@ -4,9 +4,15 @@
  *
  * Unlike a fresh-seed demo app, these are real GyfTR employees with real
  * legal-agreement access, so each user gets a random temporary password and
- * must set their own on first login (Cognito's standard
- * NEW_PASSWORD_REQUIRED challenge) — nobody is assigned a shared default
- * password.
+ * MUST set their own on first login. This is done the same way as the
+ * sibling gyftr-portal migration: create the user with no password via
+ * AdminCreateUser, then explicitly call AdminSetUserPassword with
+ * Permanent: false — that's what puts the account in FORCE_CHANGE_PASSWORD
+ * and forces Cognito's NEW_PASSWORD_REQUIRED challenge on first sign-in.
+ *
+ * NEVER set Permanent: true here — that skips the forced reset entirely
+ * and leaves every account on the one temporary password forever, which is
+ * exactly the bug this script exists to avoid.
  *
  * Usage:
  *   cd migration && npm install
@@ -18,15 +24,13 @@
  *   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY  — IAM user/role with Cognito admin permissions
  *   RDS_HOST, RDS_USER, RDS_PASSWORD, RDS_DB   — same as migrate-db.js
  *
- * IAM permission needed: cognito-idp:AdminCreateUser
- * (AdminSetUserPassword is NOT used — Cognito auto-generates and emails/
- *  returns the temporary password when MessageAction is not SUPPRESS'd, or
- *  set SEND_INVITE_EMAIL=false below to print it instead of emailing it.)
+ * IAM permissions needed: cognito-idp:AdminCreateUser, cognito-idp:AdminSetUserPassword
  */
 
 import {
   CognitoIdentityProviderClient,
   AdminCreateUserCommand,
+  AdminSetUserPasswordCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import pg from 'pg';
 
@@ -89,16 +93,27 @@ async function main() {
     process.stdout.write(`  ${p.email.padEnd(32)}`);
     try {
       const tempPassword = randomTempPassword();
+
+      // Step 1: create the account (no password yet).
       const result = await cognito.send(new AdminCreateUserCommand({
         UserPoolId:    USER_POOL_ID,
         Username:      p.email,
         MessageAction: SEND_INVITE_EMAIL ? undefined : 'SUPPRESS',
-        TemporaryPassword: tempPassword,
         UserAttributes: [
           { Name: 'email',          Value: p.email },
           { Name: 'email_verified', Value: 'true' },
           { Name: 'name',           Value: p.name },
         ],
+      }));
+
+      // Step 2: set the temporary password explicitly, Permanent: false.
+      // This is the call that puts the account in FORCE_CHANGE_PASSWORD —
+      // never change this to Permanent: true.
+      await cognito.send(new AdminSetUserPasswordCommand({
+        UserPoolId: USER_POOL_ID,
+        Username:   p.email,
+        Password:   tempPassword,
+        Permanent:  false,
       }));
 
       const sub = result.User.Attributes.find(a => a.Name === 'sub')?.Value;

@@ -3,10 +3,20 @@
 
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 
+const userPoolId = process.env.COGNITO_USER_POOL_ID;
+const clientId   = process.env.COGNITO_CLIENT_ID;
+
+if (!userPoolId || !clientId) {
+  console.error(
+    '[auth] Missing COGNITO_USER_POOL_ID or COGNITO_CLIENT_ID — set both on the container.'
+  );
+  process.exit(1);
+}
+
 const verifier = CognitoJwtVerifier.create({
-  userPoolId: process.env.COGNITO_USER_POOL_ID,
-  tokenUse:   'id',
-  clientId:   process.env.COGNITO_CLIENT_ID,
+  userPoolId,
+  tokenUse: 'id',
+  clientId,
 });
 
 export async function requireAuth(req, res, next) {
