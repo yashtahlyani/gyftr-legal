@@ -1,0 +1,43 @@
+# AWS CodeBuild — build the API image and push it to ECR.
+#
+# Required environment variables (CodeBuild project → Environment):
+#   AWS_REGION, AWS_ACCOUNT_ID, ECR_REPOSITORY   (e.g. gyftr-legal-api)
+#
+# No application config belongs here. The API reads DB credentials, Cognito
+# IDs and FRONTEND_URL from the environment at runtime (Secrets Manager / the
+# ECS task definition), so the same image is promoted unchanged.
+
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - cd backend
+      - npm ci
+
+  pre_build:
+    commands:
+      - echo "Logging in to ECR"
+      - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+      - REPO_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"
+      - IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION:-latest}"
+      # Fail early on a syntax error rather than shipping a container that
+      # crash-loops on start.
+      - for f in *.js routes/*.js middleware/*.js; do node --check "$f"; done
+
+  build:
+    commands:
+      - docker build -t "$REPO_URI:$IMAGE_TAG" -t "$REPO_URI:latest" .
+
+  post_build:
+    commands:
+      - docker push "$REPO_URI:$IMAGE_TAG"
+      - docker push "$REPO_URI:latest"
+      # imagedefinitions.json is what a CodePipeline ECS deploy stage consumes.
+      - printf '[{"name":"gyftr-legal-api","imageUri":"%s"}]' "$REPO_URI:$IMAGE_TAG" > ../imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json

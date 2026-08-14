@@ -1,0 +1,71 @@
+# Local development stack: Postgres + API + frontend.
+#
+# Production is RDS, EC2/ECS behind an ALB, and S3 + CloudFront — see
+# infra/aws-setup.md and DEPLOY.md.
+#
+#   cp .env.example .env      # fill in the Cognito values
+#   docker compose up --build
+#
+# Auth goes to the real Cognito user pool: there is no local substitute, so
+# COGNITO_* must point at a real pool even here. For UI work without any AWS
+# setup, use `npm run dev:frontend` and the demo role pills instead — those
+# exist in dev builds only.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-gyftr_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-localdev}
+      POSTGRES_DB: ${DB_NAME:-gyftr_legal}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-gyftr_admin} -d ${DB_NAME:-gyftr_legal}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-gyftr_legal}
+      DB_USER: ${DB_USER:-gyftr_admin}
+      DB_PASSWORD: ${DB_PASSWORD:-localdev}
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
+      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
+      COGNITO_REGION: ${AWS_REGION:-ap-south-1}
+      FRONTEND_URL: http://localhost:8080
+      # Server-side only. A VITE_-prefixed key would be compiled into the
+      # public bundle — that is how the previous key leaked.
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      DRAFTS_BUCKET: ${DRAFTS_BUCKET:-gyftr-legal-drafts}
+      AWS_REGION: ${AWS_REGION:-ap-south-1}
+    ports:
+      - "3001:3001"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Baked in at build time — rerun `docker compose up --build` after changing.
+        VITE_API_URL: http://localhost:3001
+        VITE_COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
+        VITE_COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID}
+        VITE_GOOGLE_OAUTH_CLIENT_ID: ${VITE_GOOGLE_OAUTH_CLIENT_ID}
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:

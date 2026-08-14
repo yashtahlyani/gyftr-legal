@@ -135,10 +135,10 @@ comment at the top of `backend/routes/clauses.js` for the full note.
 |---|---|
 | Add/remove a user | Add a `profiles` row (`insert into profiles (email, name, role, team_code) values (...)`), then re-run `scripts/create-cognito-users.js` — it only processes rows without a `cognito_sub` |
 | Change what a role can do | `backend/authz.js` — one function per rule, all in one file |
-| Add a new API field to an existing table | Add the column in `backend/schema.sql` **and** run the matching `ALTER TABLE` on the live RDS DB (schema.sql itself isn't re-run on an existing DB), then thread it through the relevant `backend/routes/*.js` and `src/lib/api.js` |
-| Add a new table/resource | New file in `backend/routes/`, register it in `backend/server.js`, add the matching functions to `src/lib/api.js` |
-| Make "nudges" (reminders) persist across refresh | Currently reminders are DB-backed on the server (`backend/routes/reminders.js`, ported for RLS parity) but the frontend's `sendNudge` in `src/ui/app-logic.js` never calls it — same as before the migration. Wire it up by calling `sendReminder()` from `src/lib/api.js` inside `sendNudge` |
-| Make drafts (Drafts modal) persist across refresh | Same situation — `backend/routes/drafts.js` + S3 storage exist and work, but `addDraft`/`toggleDraftDir` in `app-logic.js` are still local-only, matching pre-migration behavior. Wire `uploadDraft()`/`updateDraftDirection()` from `src/lib/api.js` in if/when you want real file persistence there |
+| Add a new API field to an existing table | Add the column in `backend/schema.sql` **and** run the matching `ALTER TABLE` on the live RDS DB (schema.sql itself isn't re-run on an existing DB), then thread it through the relevant `backend/routes/*.js` and `frontend/src/lib/api.js` |
+| Add a new table/resource | New file in `backend/routes/`, register it in `backend/server.js`, add the matching functions to `frontend/src/lib/api.js` |
+| Make "nudges" (reminders) persist across refresh | Currently reminders are DB-backed on the server (`backend/routes/reminders.js`, ported for RLS parity) but the frontend's `sendNudge` in `frontend/src/ui/app-logic.js` never calls it — same as before the migration. Wire it up by calling `sendReminder()` from `frontend/src/lib/api.js` inside `sendNudge` |
+| Make drafts (Drafts modal) persist across refresh | Same situation — `backend/routes/drafts.js` + S3 storage exist and work, but `addDraft`/`toggleDraftDir` in `app-logic.js` are still local-only, matching pre-migration behavior. Wire `uploadDraft()`/`updateDraftDirection()` from `frontend/src/lib/api.js` in if/when you want real file persistence there |
 | Change the AI model/prompt | `backend/routes/ai-analyze.js` (this is what's live). The old Supabase Edge Functions are deleted; the unported Claude-based prompt is kept at `docs/reference/analyse-drafts-unported.ts` |
 | Rotate the OpenAI/Adobe keys | Update `backend/.env` on the EC2 instance, then `pm2 restart gyftr-legal-api` |
 | Rotate DB credentials | Update the `gyftr/legal/db` secret in Secrets Manager — the backend re-reads it on every restart, no code change needed |
@@ -168,12 +168,12 @@ comment at the top of `backend/routes/clauses.js` for the full note.
   backend, matching the old Vercel Function (which had no auth check
   either) — this is also what lets demo-mode use AI analysis.
 - **The dead/unused frontend modules were deleted**, not migrated:
-  `src/lib/supabase.js`, `src/auth/login.js`, `src/auth/guard.js`, and every
-  file in `src/data/` except `sample.js` were confirmed unused by the live
+  `frontend/src/lib/supabase.js`, `src/auth/login.js`, `src/auth/guard.js`, and every
+  file in `frontend/src/data/` except `sample.js` were confirmed unused by the live
   app before the migration (the app called Supabase inline in
-  `src/ui/app-logic.js` instead of through these modules — see `docs/KT.md`
+  `frontend/src/ui/app-logic.js` instead of through these modules — see `docs/KT.md`
   §6.5 item 4). They're gone now; all live data access goes through the new
-  `src/lib/api.js`.
+  `frontend/src/lib/api.js`.
 - **Supabase Realtime was not used anywhere** in the app (confirmed by
   search before starting), so there was nothing to replace with polling.
 - **`profiles.email`** is a new column — the old Supabase `profiles` table
@@ -188,7 +188,7 @@ comment at the top of `backend/routes/clauses.js` for the full note.
 
 **Frontend loads but every screen is empty / login redirects immediately**
 Check `VITE_API_URL` in the frontend's build-time env — if it's wrong or
-unset, every `fetch` in `src/lib/api.js` fails silently for real accounts
+unset, every `fetch` in `frontend/src/lib/api.js` fails silently for real accounts
 (demo mode will still work, since it never calls the API). Check the browser
 console/network tab for the actual failing request.
 

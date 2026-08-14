@@ -735,7 +735,7 @@ The production frontend will be available at:
 
 **Configure Frontend Environment**
 
-Inside the root `gyftr-legal` directory, create `.env.local`:
+Inside the root `gyftr-legal` directory, create `frontend/.env.local`:
 ```
 VITE_API_URL=https://api.legal.gyftr.net
 VITE_COGNITO_USER_POOL_ID=YOUR_COGNITO_USER_POOL_ID
@@ -775,7 +775,7 @@ Keep the bucket private and let CloudFront access it using Origin Access Control
 
 Upload the build:
 ```bash
-aws s3 sync dist/ s3://gyftr-legal-frontend/ --delete
+aws s3 sync frontend/dist/ s3://gyftr-legal-frontend/ --delete
 ```
 
 **Drafts bucket**
@@ -942,7 +942,7 @@ git pull
 npm install
 npm run build
 
-aws s3 sync dist/ s3://gyftr-legal-frontend/ --delete
+aws s3 sync frontend/dist/ s3://gyftr-legal-frontend/ --delete
 ```
 
 Invalidate the CloudFront cache:
@@ -1157,7 +1157,7 @@ After confirming that the AWS version works correctly:
 - Keep the S3 frontend bucket private behind CloudFront OAC.
 - Keep the S3 drafts bucket fully private (no public access, no CloudFront).
 - Confirm HTTPS is enforced on both `legal.gyftr.net` and `api.legal.gyftr.net`.
-- Ensure `.env`/`.env.local` files are excluded from Git.
+- Ensure `.env`/`frontend/.env.local` files are excluded from Git.
 - Ensure passwords and API keys are not committed to the repository.
 - Ask users to replace temporary passwords with their own secure passwords.
 

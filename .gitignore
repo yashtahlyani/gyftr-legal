@@ -1,7 +1,12 @@
 node_modules/
 dist/
+frontend/dist/
 .env.local
 .env
+.env.*.local
+frontend/.env
+frontend/.env.local
+backend/.env
 *.local
 .DS_Store
 

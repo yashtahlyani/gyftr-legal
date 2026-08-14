@@ -50,7 +50,7 @@ holding DB credentials, and a second private **S3** bucket for draft files.
 5. User pool name: `gyftr-legal-users`.
 6. App client name: `gyftr-legal-web`, type: **Public client**, no secret.
 7. Note the **User Pool ID** (e.g. `ap-south-1_AbcXYZ`) and **Client ID**.
-8. Put these in the frontend `.env.local`:
+8. Put these in the frontend `frontend/.env.local`:
    ```
    VITE_COGNITO_USER_POOL_ID=ap-south-1_AbcXYZ
    VITE_COGNITO_CLIENT_ID=...
@@ -120,7 +120,7 @@ holding DB credentials, and a second private **S3** bucket for draft files.
 3. Listener: HTTPS 443 (attach an ACM certificate for `api.legal.your-domain.example`).
 4. Target group: `gyftr-legal-api-tg`, protocol HTTP, port 3001, health check path `/health`, target: the EC2 instance.
 5. In Route53 (or your DNS): add `api.legal.your-domain.example` CNAME → ALB DNS name.
-6. Set `VITE_API_URL=https://api.legal.your-domain.example` in the frontend `.env.local`.
+6. Set `VITE_API_URL=https://api.legal.your-domain.example` in the frontend `frontend/.env.local`.
 
 ---
 
@@ -132,11 +132,11 @@ holding DB credentials, and a second private **S3** bucket for draft files.
    ```bash
    cd /path/to/gyftr-legal
    npm install
-   npm run build   # outputs to dist/
+   npm run build   # outputs to frontend/dist/
    ```
 4. Upload `dist/` to S3:
    ```bash
-   aws s3 sync dist/ s3://gyftr-legal-frontend/ --delete
+   aws s3 sync frontend/dist/ s3://gyftr-legal-frontend/ --delete
    ```
 5. Go to **CloudFront → Create distribution**:
    - Origin: `gyftr-legal-frontend.s3.ap-south-1.amazonaws.com`
@@ -221,7 +221,7 @@ pm2 restart gyftr-legal-api
 **Frontend** (from your laptop):
 ```bash
 npm run build
-aws s3 sync dist/ s3://gyftr-legal-frontend/ --delete
+aws s3 sync frontend/dist/ s3://gyftr-legal-frontend/ --delete
 aws cloudfront create-invalidation --distribution-id <CF_ID> --paths "/*"
 ```
 
@@ -231,11 +231,11 @@ aws cloudfront create-invalidation --distribution-id <CF_ID> --paths "/*"
 
 | Variable | Where | Value |
 |---|---|---|
-| `VITE_API_URL` | Frontend `.env.local` | `https://api.legal.your-domain.example` |
-| `VITE_COGNITO_USER_POOL_ID` | Frontend `.env.local` | From Cognito console |
-| `VITE_COGNITO_CLIENT_ID` | Frontend `.env.local` | From Cognito console |
-| `VITE_OPENAI_API_KEY` | Frontend `.env.local` | Optional client-supplied fallback (see `backend/.env` `OPENAI_API_KEY` instead) |
-| `VITE_GOOGLE_*` | Frontend `.env.local` | Unrelated to this migration — same Google Drive/Docs/Picker keys as before |
+| `VITE_API_URL` | Frontend `frontend/.env.local` | `https://api.legal.your-domain.example` |
+| `VITE_COGNITO_USER_POOL_ID` | Frontend `frontend/.env.local` | From Cognito console |
+| `VITE_COGNITO_CLIENT_ID` | Frontend `frontend/.env.local` | From Cognito console |
+| `VITE_OPENAI_API_KEY` | Frontend `frontend/.env.local` | Optional client-supplied fallback (see `backend/.env` `OPENAI_API_KEY` instead) |
+| `VITE_GOOGLE_*` | Frontend `frontend/.env.local` | Unrelated to this migration — same Google Drive/Docs/Picker keys as before |
 | `PORT` | Backend `.env` | `3001` |
 | `AWS_SECRET_NAME` | Backend `.env` | `gyftr/legal/db` |
 | `AWS_REGION` | Backend `.env` | `ap-south-1` |
@@ -259,8 +259,8 @@ aws cloudfront create-invalidation --distribution-id <CF_ID> --paths "/*"
 | `backend/authz.js` | Server-side authorization — 1:1 port of every old Supabase RLS policy |
 | `backend/routes/*.js` | REST API, one file per resource |
 | `backend/schema.sql` | Plain Postgres schema for RDS (no RLS, no `auth.users` FK) |
-| `src/lib/api.js` | Frontend API client (fetch wrapper + row→portal-format mapper) |
-| `src/lib/auth-cognito.js` | Cognito login/session (real-account login path) |
+| `frontend/src/lib/api.js` | Frontend API client (fetch wrapper + row→portal-format mapper) |
+| `frontend/src/lib/auth-cognito.js` | Cognito login/session (real-account login path) |
 | `scripts/migrate-db.js` | One-time (re-runnable) Supabase → RDS data copy |
 | `scripts/create-cognito-users.js` | Creates + links a Cognito account per real user |
 | `scripts/smoke-test.js` | Post-deploy verification |

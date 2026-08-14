@@ -13,7 +13,7 @@ Closes #
 
 ## Checklist
 - [ ] `npm run build` passes locally
-- [ ] No secrets or `.env.local` committed
+- [ ] No secrets or `frontend/.env.local` committed
 - [ ] Updated docs / README where relevant
 - [ ] Added a CHANGELOG entry under "Unreleased"
 

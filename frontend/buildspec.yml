@@ -1,0 +1,58 @@
+# AWS CodeBuild — build the legal frontend and publish it to S3 + CloudFront.
+#
+# Required environment variables (CodeBuild project → Environment):
+#   VITE_API_URL, VITE_COGNITO_USER_POOL_ID, VITE_COGNITO_CLIENT_ID
+#   S3_BUCKET, CLOUDFRONT_DISTRIBUTION_ID
+# Optional: VITE_GOOGLE_* for the Drive/Docs/Picker integration.
+#
+# VITE_* values are baked in at build time. Changing one means rebuilding —
+# redeploying the same artefact will not pick it up.
+#
+# There is deliberately NO OpenAI key here. It is server-side only
+# (backend OPENAI_API_KEY). A VITE_-prefixed secret ends up in the public
+# bundle, which is exactly how the previous key was exposed.
+
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - cd frontend
+      - npm ci
+
+  pre_build:
+    commands:
+      - |
+        if [ -z "$VITE_API_URL" ] || [ -z "$VITE_COGNITO_USER_POOL_ID" ] || [ -z "$VITE_COGNITO_CLIENT_ID" ]; then
+          echo "ERROR: VITE_API_URL / VITE_COGNITO_USER_POOL_ID / VITE_COGNITO_CLIENT_ID must be set."
+          echo "Without them the bundle builds fine but every login fails."
+          exit 1
+        fi
+      - |
+        if [ -n "$VITE_OPENAI_API_KEY" ]; then
+          echo "ERROR: VITE_OPENAI_API_KEY is set. VITE_ variables are compiled into"
+          echo "the public bundle. Set OPENAI_API_KEY on the backend instead."
+          exit 1
+        fi
+
+  build:
+    commands:
+      # NODE_ENV=production also strips the dev-only demo login.
+      - NODE_ENV=production npm run build
+
+  post_build:
+    commands:
+      # Hashed assets first and long-lived; the HTML entry points last and
+      # never cached, so a user can never load new HTML that points at assets
+      # which have not been uploaded yet.
+      - aws s3 sync dist/ "s3://$S3_BUCKET/" --delete --exclude "*.html" --cache-control "public,max-age=31536000,immutable"
+      - aws s3 cp dist/index.html "s3://$S3_BUCKET/index.html" --cache-control "no-store,must-revalidate"
+      - aws s3 cp dist/app.html   "s3://$S3_BUCKET/app.html"   --cache-control "no-store,must-revalidate"
+      - aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" --paths "/" "/index.html" "/app.html"
+
+artifacts:
+  base-directory: frontend/dist
+  files:
+    - '**/*'

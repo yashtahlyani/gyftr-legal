@@ -26,7 +26,7 @@ be treated as compromised.
 
 ```bash
 cd /app/gyftr-legal && git pull
-cd backend && npm install
+npm --prefix backend install
 pm2 restart gyftr-legal-api
 ```
 
@@ -37,14 +37,18 @@ pm2 restart gyftr-legal-api
 
 ```bash
 cd /app/gyftr-legal
-# .env.local is gitignored — create it if this is a fresh checkout
-cp .env.example .env.local     # then fill VITE_API_URL and VITE_COGNITO_*
-npm install && npm run build
-aws s3 sync dist/ s3://<legal-bucket>/ --delete
+npm --prefix frontend install
+
+# frontend/.env.local is gitignored — create it on a fresh checkout.
+# Without it the build succeeds but every login fails.
+cp frontend/.env.example frontend/.env.local     # fill VITE_API_URL + VITE_COGNITO_*
+
+npm run build                                     # outputs to frontend/dist
+aws s3 sync frontend/dist/ s3://<legal-bucket>/ --delete
 aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
 ```
 
-Never put a secret in `.env.local`. Anything prefixed `VITE_` is compiled into
+Never put a secret in `frontend/.env.local`. Anything prefixed `VITE_` is compiled into
 the public bundle.
 
 ## 3. Require every user to set their own password
@@ -126,7 +130,7 @@ carrying the old flag.
 | AI analysis returns 503 | `OPENAI_API_KEY` is not set in `backend/.env`. |
 | Every API call returns 401 | Frontend built without `VITE_COGNITO_*`, or the token expired — sign out and back in. |
 | Browser blocks API calls (CORS) | `FRONTEND_URL` in `backend/.env` does not exactly match the CloudFront origin. |
-| New entries do not persist | Check the browser console for a failed write; failed writes are queued in `src/lib/writeQueue.js` and replayed on the next successful load. |
+| New entries do not persist | Check the browser console for a failed write; failed writes are queued in `frontend/src/lib/writeQueue.js` and replayed on the next successful load. |
 
 Rollback is `git checkout <previous-sha> && npm install && pm2 restart` for the
 backend, plus re-syncing the previous `dist/` to S3 for the frontend. The

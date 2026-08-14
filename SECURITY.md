@@ -12,7 +12,7 @@ This project never commits real credentials:
 
 - All keys and tokens are read from environment variables. See
   `.env.example` (frontend) and `backend/.env.example` (backend) for the
-  full list. `.env.local` and `backend/.env` are gitignored and must never
+  full list. `frontend/.env.local` and `backend/.env` are gitignored and must never
   be committed.
 - Server-side secrets (OpenAI key, Adobe client secret, RDS credentials) live
   in `backend/.env` on the EC2 instance, or in AWS Secrets Manager
@@ -30,6 +30,6 @@ because anything pushed to a remote should be considered compromised:
 
 1. Revoke/regenerate the key in the relevant provider console
    (Google Cloud, AWS, OpenAI, Adobe).
-2. Update the value in your local `.env.local`/`backend/.env` and in AWS
+2. Update the value in your local `frontend/.env.local`/`backend/.env` and in AWS
    Secrets Manager / the EC2 instance's env file.
 3. Confirm the old key no longer works.

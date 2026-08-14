@@ -25,60 +25,64 @@ remarks, team review status, reminders, and AI-assisted clause analysis.
 
 ```
 gyftr-legal/
-├── index.html              # Login page
-├── app.html                # Main portal (all screens)
-├── vite.config.js
-├── package.json
-├── .env.local              # YOUR FRONTEND KEYS GO HERE (never commit)
-├── src/
-│   ├── css/style.css       # All styles
-│   ├── lib/
-│   │   ├── api.js          # Backend API client (fetch wrapper)
-│   │   └── auth-cognito.js # Cognito login/session
-│   ├── data/
-│   │   └── sample.js       # Demo data (prototype / demo-mode login)
-│   ├── ui/
-│   │   ├── utils.js        # fd(), ns(), showToast() etc.
-│   │   ├── app-logic.js    # Full portal JS (extracted from HTML)
-│   │   ├── google-api.js   # Google Drive/Docs/Picker integration
-│   │   └── ai-analyze.js   # AI clause-analysis UI
-│   ├── login.js            # Entry point → index.html
-│   └── main.js             # Entry point → app.html
-├── backend/                 # Express API — see infra/aws-setup.md
+├── frontend/                   # Vite multi-page app (login + portal)
+│   ├── Dockerfile              # builds the bundle, serves via nginx
+│   ├── buildspec.yml           # CodeBuild → S3 + CloudFront
+│   ├── nginx.conf
+│   ├── index.html              # Login page
+│   ├── app.html                # Main portal (all screens)
+│   ├── vite.config.js
+│   └── src/
+│       ├── css/style.css
+│       ├── data/sample.js      # Demo data (dev-only demo login)
+│       ├── lib/
+│       │   ├── api.js          # Backend API client
+│       │   ├── auth-cognito.js # Cognito login/session
+│       │   └── writeQueue.js   # Retries writes that failed to reach the API
+│       ├── ui/                 # app-logic, ai-analyze, google-api, utils
+│       ├── login.js            # Entry point → index.html
+│       └── main.js             # Entry point → app.html
+│
+├── backend/                    # Express API
+│   ├── Dockerfile
+│   ├── buildspec.yml           # CodeBuild → ECR
 │   ├── server.js
-│   ├── db.js                # RDS connection (Secrets Manager or env vars)
-│   ├── s3.js                 # Draft file storage
-│   ├── authz.js               # Authorization rules (was Supabase RLS)
-│   ├── middleware/
-│   ├── routes/
-│   └── schema.sql            # Plain Postgres schema for RDS
-├── scripts/                # Operational AWS scripts
-│   ├── audit-access.js           # who has what access (read-only)
+│   ├── db.js                   # RDS connection (Secrets Manager or env vars)
+│   ├── s3.js                   # Draft file storage
+│   ├── authz.js                # Authorization rules
+│   ├── schema.sql              # Applied automatically on boot
+│   ├── middleware/             # auth.js, loadProfile.js
+│   └── routes/
+│
+├── scripts/                    # Operational AWS scripts
+│   ├── audit-access.js         # who has what access (read-only)
 │   ├── create-cognito-users.js
 │   ├── force-password-reset.js
-│   ├── migrate-email-domain.js   # not needed: both email domains are accepted
+│   ├── migrate-email-domain.js # not needed: both email domains are accepted
 │   └── smoke-test.js
-├── infra/
-│   ├── aws-setup.md           # Full AWS provisioning guide (first-time)
-│   └── HANDOVER.md            # Plain-language overview, logins, cookbook
-└── docs/
-    ├── KT.md                   # Feature/screen-level writeup
-    └── reference/              # Unported Claude clause-diff prompt
+│
+├── infra/                      # aws-setup.md, HANDOVER.md
+├── docs/                       # KT.md, reference/
+├── docker-compose.yml          # Local stack: Postgres + API + UI
+├── DEPLOY.md                   # Release runbook
+└── .env.example                # docker-compose values only
 ```
 
 ## Setup — Step by Step
 
 ### Step 1 — Install dependencies
 ```bash
-npm install
+npm run install:all      # frontend + backend + scripts
 ```
 
-### Step 2 — Create .env.local
+### Step 2 — Create frontend/.env.local
 ```
 VITE_API_URL=https://api.your-domain.example
 VITE_COGNITO_USER_POOL_ID=ap-south-1_XXXXXXXXX
 VITE_COGNITO_CLIENT_ID=your_cognito_client_id
 ```
+No secrets here — `VITE_`-prefixed values are compiled into the public bundle.
+Server-side keys (OpenAI, Adobe, DB) belong in `backend/.env`.
 Get these from the AWS Cognito console and your backend's ALB/DNS — see
 `infra/aws-setup.md` for full provisioning steps if none of this exists yet.
 
@@ -100,7 +104,7 @@ To deploy a new release, follow **[`DEPLOY.md`](DEPLOY.md)**.
 
 ### Step 5 — Start dev server
 ```bash
-npm run dev
+npm run dev:frontend
 ```
 Open http://localhost:5173. In development you can log in without any AWS
 setup via the role pills on the login screen (Legal/Finance/Business/
@@ -109,16 +113,19 @@ out of production builds.
 
 ### Step 6 — Run the backend locally (optional, for full-stack dev)
 ```bash
-cd backend
-npm install
-cp .env.example .env   # fill in RDS/Cognito/S3 values
-npm run dev
+cp backend/.env.example backend/.env   # fill in RDS/Cognito/S3/OpenAI values
+npm run dev:backend
+```
+
+Or run the whole stack (Postgres + API + UI) in containers:
+```bash
+cp .env.example .env && npm run docker:up    # UI on :8080
 ```
 
 ## Prototype vs Production Mode
 
 **Demo mode** (role-picker login, no password) exists in `npm run dev` only.
-It uses hardcoded sample data from `src/data/sample.js` and never touches the
+It uses hardcoded sample data from `frontend/src/data/sample.js` and never touches the
 real database. `vite build` strips it, so the deployed portal always requires a
 real Cognito login. Both `@gyftr.net` and `@gyftr.com` addresses are accepted.
 

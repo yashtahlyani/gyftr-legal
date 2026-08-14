@@ -1,7 +1,8 @@
 {
   "name": "gyftr-legal",
   "version": "1.0.0",
-  "description": "GyfTR Legal Portal — agreement tracking, drafts, reminders, and AI clause analysis built with Vite + a self-hosted AWS backend (Express/RDS/Cognito).",
+  "private": true,
+  "description": "GyfTR Legal Portal — agreement tracking, drafts, reminders, and AI clause analysis. Vite frontend, Express API, AWS (RDS/Cognito/S3).",
   "type": "module",
   "license": "MIT",
   "homepage": "https://github.com/yashtahlyani/gyftr-legal#readme",
@@ -23,14 +24,13 @@
     "node": ">=18"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "amazon-cognito-identity-js": "^6.3.12"
-  },
-  "devDependencies": {
-    "vite": "^5.0.0"
+    "install:all": "npm --prefix frontend install && npm --prefix backend install && npm --prefix scripts install",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build": "npm --prefix frontend run build",
+    "build:frontend": "npm --prefix frontend run build",
+    "start:backend": "npm --prefix backend start",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
   }
 }
