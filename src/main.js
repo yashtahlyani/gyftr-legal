@@ -7,8 +7,18 @@ import {
   showToast, renderPromiseBadge, wordDiff, promiseDaysLeft
 } from './ui/utils.js'
 
-// ── 0. Auth check — supports both Supabase session and demo mode ─────────────
-const demoRole = sessionStorage.getItem('demo_role')
+// ── 0. Auth check — Cognito session, plus demo mode in development only ──────
+// The demo_role branch skips authentication entirely, so it is compiled out of
+// production builds: otherwise anyone could set sessionStorage.demo_role in
+// devtools and load the app shell without signing in.
+const demoRole = import.meta.env.DEV ? sessionStorage.getItem('demo_role') : null
+
+// Clear any stale demo flag whenever this is not a demo session. app-logic.js
+// reads sessionStorage.demo_role directly, and when it is set, creating an
+// agreement shows a success toast but deliberately never writes to the server.
+// A leftover flag from an earlier demo login therefore made a real user's work
+// silently vanish — one of the reported "data is not being stored" cases.
+if (!demoRole) sessionStorage.removeItem('demo_role')
 let savedRole  = demoRole
 let profile    = null
 

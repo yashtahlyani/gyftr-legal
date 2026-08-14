@@ -43,14 +43,16 @@ app.use(express.json());
 // ── Health check (no auth needed — used by the ALB target group) ───────────
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
-// ── AI analysis stays unauthenticated, matching the old Vercel Function
-//    (api/ai-analyze.js had no auth check either — this keeps demo-mode
-//    login, which has no Cognito token, able to use it against sample data). ─
-app.use('/api', aiAnalyzeRoutes);
-
-// ── Everything else under /api requires a valid Cognito token + a linked profile ─
+// ── Everything under /api requires a valid Cognito token + a linked profile ─
+//
+// /api/ai-analyze used to be mounted ABOVE this line, unauthenticated, so that
+// demo mode could reach it. That was survivable only while the caller supplied
+// their own OpenAI key. The key is now server-side, so an open endpoint means
+// anyone on the internet can spend GyFTR's OpenAI credits. Demo mode losing AI
+// analysis is the correct trade.
 app.use('/api', requireAuth, loadProfile);
 
+app.use('/api', aiAnalyzeRoutes);
 app.use('/api/agreements', agreementsRoutes);
 app.use('/api', draftsRoutes);
 app.use('/api', remarksRoutes);

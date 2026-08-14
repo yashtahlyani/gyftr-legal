@@ -45,7 +45,12 @@ function clearError() {
   if (el) el.style.display = 'none'
 }
 
-// Enter demo mode — no Supabase needed, matches v9 behaviour
+// Demo mode is a DEVELOPMENT-ONLY affordance. import.meta.env.DEV is true
+// under `vite dev` and compiled to false by `vite build`, so none of this
+// reaches production. It previously shipped: entering one of DEMO_EMAILS with
+// ANY password bypassed Cognito completely and logged you into the portal.
+const DEMO_MODE_ALLOWED = import.meta.env.DEV
+
 function enterDemoMode(role) {
   sessionStorage.setItem('demo_role', role)
   sessionStorage.removeItem('profile')
@@ -64,10 +69,11 @@ window.handleLogin = async function () {
     return
   }
 
-  // Demo role pill selected → bypass Cognito entirely (trust selectedRole over autofilled email)
-  const demoRole = DEMO_EMAILS[selectedRole]
-    ? selectedRole
-    : Object.entries(DEMO_EMAILS).find(([, e]) => e === email)?.[0]
+  // Demo role pill selected → bypass Cognito (development builds only)
+  const demoRole = !DEMO_MODE_ALLOWED ? null
+    : DEMO_EMAILS[selectedRole]
+      ? selectedRole
+      : Object.entries(DEMO_EMAILS).find(([, e]) => e === email)?.[0]
   if (demoRole) {
     enterDemoMode(demoRole)
     return
