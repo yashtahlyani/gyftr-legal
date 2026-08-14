@@ -89,7 +89,7 @@ Do not share production passwords or access keys through email, chat, or documen
 
 All users authenticate using their `@gyftr.net` email addresses.
 
-During migration, accounts are created with a randomly generated temporary password (see `migration/create-cognito-users.js` — it prints one per user, it does **not** assign a shared default password since this portal holds real legal-agreement access). Users must change their password on first login (Cognito's standard "new password required" flow).
+During migration, accounts are created with a randomly generated temporary password (see `scripts/create-cognito-users.js` — it prints one per user, it does **not** assign a shared default password since this portal holds real legal-agreement access). Users must change their password on first login (Cognito's standard "new password required" flow).
 
 | Name | Email | Role | Team code |
 |---|---|---|---|
@@ -134,7 +134,7 @@ cd backend
 npm install
 cd ..
 
-cd migration
+cd scripts
 npm install
 cd ..
 ```
@@ -430,7 +430,7 @@ Both values are required for the frontend and backend configuration.
 
 ## 11. Step 5 — Create Cognito User Accounts
 
-The project contains a script (`migration/create-cognito-users.js`) that creates a Cognito account for every row in the `profiles` table and links it back via `cognito_sub` — you don't need to create the 4 users by hand in the console.
+The project contains a script (`scripts/create-cognito-users.js`) that creates a Cognito account for every row in the `profiles` table and links it back via `cognito_sub` — you don't need to create the 4 users by hand in the console.
 
 **Create AWS Credentials**
 
@@ -443,7 +443,7 @@ Generate temporary access credentials for the setup process.
 
 **Mac/Linux**
 ```bash
-cd migration
+cd scripts
 
 export COGNITO_USER_POOL_ID=YOUR_USER_POOL_ID
 export AWS_REGION=ap-south-1
@@ -459,7 +459,7 @@ node create-cognito-users.js
 
 **Windows Command Prompt**
 ```cmd
-cd migration
+cd scripts
 
 set COGNITO_USER_POOL_ID=YOUR_USER_POOL_ID
 set AWS_REGION=ap-south-1
@@ -498,7 +498,7 @@ from Supabase to PostgreSQL on AWS RDS + S3.
 
 **Mac/Linux**
 ```bash
-cd migration
+cd scripts
 
 export SUPABASE_URL=https://aiaeruajrbrxkoaqzdpp.supabase.co
 export SUPABASE_PAT=YOUR_SUPABASE_PERSONAL_ACCESS_TOKEN
@@ -516,7 +516,7 @@ node migrate-db.js
 
 **Windows Command Prompt**
 ```cmd
-cd migration
+cd scripts
 
 set SUPABASE_URL=https://aiaeruajrbrxkoaqzdpp.supabase.co
 set SUPABASE_PAT=YOUR_SUPABASE_PERSONAL_ACCESS_TOKEN
@@ -1000,7 +1000,7 @@ values ('new.person@gyftr.net', 'New Person', 'legal', 'L');
 
 Step 2 — Create their Cognito account and link it
 ```bash
-cd migration
+cd scripts
 export COGNITO_USER_POOL_ID=... AWS_REGION=ap-south-1 \
   AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... \
   RDS_HOST=... RDS_USER=gyftr_admin RDS_PASSWORD=... RDS_DB=gyftr_legal

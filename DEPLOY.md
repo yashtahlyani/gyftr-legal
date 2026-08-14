@@ -68,7 +68,19 @@ who completed a login on the old shared password.
 
 Add `--only=a@gyftr.net,b@gyftr.net` to target specific accounts.
 
-## 4. Verify the deploy actually works
+## 4. Review who has access
+
+```bash
+export RDS_HOST=<endpoint> RDS_USER=<user> RDS_PASSWORD=<pass> RDS_DB=gyftr_legal
+npm run audit-access                      # readable report + warnings
+npm run audit-access -- --csv > access-review.csv   # for sign-off
+```
+
+Lists every profile with its role, team and Cognito status, and flags the
+things that silently break a login: a profile with no `cognito_sub`, a Cognito
+account with no profile, or a `sub` that no longer matches.
+
+## 5. Verify the deploy actually works
 
 ```bash
 export SMOKE_API_URL=https://api.<your-domain>

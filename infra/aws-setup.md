@@ -56,7 +56,7 @@ holding DB credentials, and a second private **S3** bucket for draft files.
    VITE_COGNITO_CLIENT_ID=...
    ```
    and the same two (plus `COGNITO_REGION=ap-south-1`) in `backend/.env`.
-9. **Create the 4 real users**: run `migration/create-cognito-users.js` (see §8) —
+9. **Create the 4 real users**: run `scripts/create-cognito-users.js` (see §8) —
    it creates one Cognito account per `profiles` row and links it back via
    `cognito_sub`, rather than creating them by hand in the console.
 
@@ -157,7 +157,7 @@ holding DB credentials, and a second private **S3** bucket for draft files.
 Run the RDS schema first (§1 step 8), then:
 
 ```bash
-cd migration
+cd scripts
 npm install
 
 export SUPABASE_URL=https://aiaeruajrbrxkoaqzdpp.supabase.co
@@ -203,7 +203,7 @@ Finally, verify the deploy:
 
 ```bash
 export SMOKE_API_URL=https://api.legal.your-domain.example
-export SMOKE_TOKEN=<a real Cognito ID token — see migration/smoke-test.js for how to get one>
+export SMOKE_TOKEN=<a real Cognito ID token — see scripts/smoke-test.js for how to get one>
 node smoke-test.js
 ```
 
@@ -261,7 +261,7 @@ aws cloudfront create-invalidation --distribution-id <CF_ID> --paths "/*"
 | `backend/schema.sql` | Plain Postgres schema for RDS (no RLS, no `auth.users` FK) |
 | `src/lib/api.js` | Frontend API client (fetch wrapper + row→portal-format mapper) |
 | `src/lib/auth-cognito.js` | Cognito login/session (real-account login path) |
-| `migration/migrate-db.js` | One-time (re-runnable) Supabase → RDS data copy |
-| `migration/create-cognito-users.js` | Creates + links a Cognito account per real user |
-| `migration/smoke-test.js` | Post-deploy verification |
+| `scripts/migrate-db.js` | One-time (re-runnable) Supabase → RDS data copy |
+| `scripts/create-cognito-users.js` | Creates + links a Cognito account per real user |
+| `scripts/smoke-test.js` | Post-deploy verification |
 | `infra/HANDOVER.md` | Plain-language overview, login info, common changes, troubleshooting |

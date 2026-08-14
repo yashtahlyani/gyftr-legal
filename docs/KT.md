@@ -50,7 +50,7 @@ There is no test framework, no linter config, and no TypeScript on the frontend 
 
 ---
 
-## 3. Repository map (pre-migration snapshot — `backend/`, `migration/`, and `infra/` did not exist yet; `api/ai-analyze.js` has since been removed and ported into `backend/routes/ai-analyze.js`)
+## 3. Repository map (pre-migration snapshot — `backend/`, `scripts/`, and `infra/` did not exist yet; `api/ai-analyze.js` has since been removed and ported into `backend/routes/ai-analyze.js`)
 
 ```
 gyftr-legal/
@@ -264,7 +264,7 @@ To exercise the full stack locally you also need: the 4 demo users created in yo
 
 - **GitHub:** `github.com/yashtahlyani/gyftr-legal`
 - ~~Vercel project: `gyftr-legal` (org `team_Mx4mOXDA81DCUtFiCC2Wo78V`)~~ — decommissioned; frontend now serves from S3 + CloudFront.
-- ~~Supabase project: `gyftr-legal`, ref `aiaeruajrbrxkoaqzdpp`, region `ap-south-1`~~ — decommissioned after `migration/migrate-db.js` ran; database is now RDS. The Supabase project reference is still useful if you ever need to re-run the migration script against the old data.
+- ~~Supabase project: `gyftr-legal`, ref `aiaeruajrbrxkoaqzdpp`, region `ap-south-1`~~ — decommissioned after `scripts/migrate-db.js` ran; database is now RDS. The Supabase project reference is still useful if you ever need to re-run the migration script against the old data.
 - **Google Cloud Console project:** wherever the `VITE_GOOGLE_*` keys were provisioned — unrelated to this migration, unchanged. Not identifiable from the repo, check with whoever set up the OAuth consent screen / API keys.
 - **Adobe Sign / Adobe Developer Console:** wherever `ADOBE_CLIENT_ID`/`SECRET` were provisioned — unrelated to this migration, unchanged.
 

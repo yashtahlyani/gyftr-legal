@@ -52,7 +52,8 @@ gyftr-legal/
 │   ├── middleware/
 │   ├── routes/
 │   └── schema.sql            # Plain Postgres schema for RDS
-├── migration/                # Operational AWS scripts (all support --dry-run)
+├── scripts/                # Operational AWS scripts
+│   ├── audit-access.js           # who has what access (read-only)
 │   ├── create-cognito-users.js
 │   ├── force-password-reset.js
 │   ├── migrate-email-domain.js   # not needed: both email domains are accepted
@@ -60,9 +61,9 @@ gyftr-legal/
 ├── infra/
 │   ├── aws-setup.md           # Full AWS provisioning guide (first-time)
 │   └── HANDOVER.md            # Plain-language overview, logins, cookbook
-└── supabase/                  # Old Supabase project files — kept for
-    ├── schema.sql              # reference only; no longer deployed.
-    └── functions/
+└── docs/
+    ├── KT.md                   # Feature/screen-level writeup
+    └── reference/              # Unported Claude clause-diff prompt
 ```
 
 ## Setup — Step by Step
@@ -90,7 +91,7 @@ against RDS.
 ### Step 4 — Migrate or seed users
 
 For a fresh environment, create the 4 team profiles directly in RDS and run
-`migration/create-cognito-users.js` to create their Cognito accounts. The
+`scripts/create-cognito-users.js` to create their Cognito accounts. The
 portal does not auto-create profiles: a Cognito user with no `profiles` row
 gets a visible "No profile linked to this account" error rather than silently
 being given default access.
@@ -101,9 +102,10 @@ To deploy a new release, follow **[`DEPLOY.md`](DEPLOY.md)**.
 ```bash
 npm run dev
 ```
-Open http://localhost:5173. You can also log in without any AWS setup via
-the demo-mode role pills on the login screen (Legal/Finance/Business/
-Compliance) — this uses local sample data only, no backend required.
+Open http://localhost:5173. In development you can log in without any AWS
+setup via the role pills on the login screen (Legal/Finance/Business/
+Compliance) — local sample data only, no backend required. This is compiled
+out of production builds.
 
 ### Step 6 — Run the backend locally (optional, for full-stack dev)
 ```bash
@@ -115,10 +117,10 @@ npm run dev
 
 ## Prototype vs Production Mode
 
-**Demo mode** (role-picker login, no password) still exists for quick demos
-— it uses hardcoded sample data from `src/data/sample.js` and never touches
-the real database. Logging in with a real `@gyftr.net` email routes through
-Cognito and the live backend instead.
+**Demo mode** (role-picker login, no password) exists in `npm run dev` only.
+It uses hardcoded sample data from `src/data/sample.js` and never touches the
+real database. `vite build` strips it, so the deployed portal always requires a
+real Cognito login. Both `@gyftr.net` and `@gyftr.com` addresses are accepted.
 
 ## APIs Used
 
