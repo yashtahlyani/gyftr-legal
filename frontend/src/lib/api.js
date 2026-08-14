@@ -4,15 +4,64 @@
 
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7978'
 
+// A Cognito ID token expires after an hour. Holding one captured at login
+// meant that after 60 minutes every request went out with a dead token, the
+// API answered 401, and the portal looked broken until the page was reloaded.
+// Hold a provider that returns a currently-valid token instead — Cognito
+// refreshes it transparently.
 let _token = null
+let _tokenProvider = null
+
 export const setAuthToken = (t) => { _token = t }
 export const getAuthToken = () => _token
+export const setAuthTokenProvider = (fn) => { _tokenProvider = fn }
+
+let _onSessionExpired = null
+export const setOnSessionExpired = (fn) => { _onSessionExpired = fn }
+
+async function currentToken() {
+  if (_tokenProvider) {
+    try {
+      const fresh = await _tokenProvider()
+      if (fresh) { _token = fresh; return fresh }
+      if (_onSessionExpired) _onSessionExpired()
+      return null
+    } catch {
+      return _token
+    }
+  }
+  return _token
+}
+
+// If the API host accepts the connection but never answers — a security group
+// dropping traffic, an ALB with no healthy target — fetch waits forever. That
+// showed up as a login button stuck on "Signing in…" with no error anywhere.
+// Fail loudly instead, so the real problem is visible.
+const REQUEST_TIMEOUT_MS = 15000
 
 async function apiFetch(path, options = {}) {
   const isFormData = options.body instanceof FormData
   const headers = { ...(isFormData ? {} : { 'Content-Type': 'application/json' }), ...(options.headers || {}) }
-  if (_token) headers['Authorization'] = `Bearer ${_token}`
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers })
+  const token = await currentToken()
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  let res
+  try {
+    res = await fetch(`${API_URL}${path}`, { ...options, headers, signal: controller.signal })
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error(`The server did not respond within ${REQUEST_TIMEOUT_MS / 1000}s (${API_URL}). It may be down or unreachable.`, { cause: err })
+    }
+    // A network-level failure here is usually a blocked CORS preflight or a
+    // wrong VITE_API_URL, neither of which fetch reports in any detail.
+    throw new Error(`Could not reach the server at ${API_URL}. Check the API is running and its CORS origin matches this site.`, { cause: err })
+  } finally {
+    clearTimeout(timer)
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error || `API error ${res.status}`)

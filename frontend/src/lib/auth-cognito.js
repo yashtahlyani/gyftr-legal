@@ -5,7 +5,7 @@
 // when a real @gyftr.net email is entered.
 
 import { CognitoUserPool, CognitoUser, AuthenticationDetails } from 'amazon-cognito-identity-js'
-import { setAuthToken, getMyProfile } from './api.js'
+import { setAuthToken, setAuthTokenProvider, getMyProfile } from './api.js'
 
 const userPool = new CognitoUserPool({
   UserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
@@ -16,6 +16,21 @@ const userPool = new CognitoUserPool({
 // { mustChangePassword: true } and the caller submitting a new password via
 // completeNewPasswordChallenge(). Cleared on success/failure/new signIn.
 let _pendingChallenge = null
+
+// Returns a currently-valid ID token, or null if the session cannot be
+// renewed. getSession() mints a new ID token from the refresh token when the
+// current one has expired — this is what stops the portal breaking after an
+// hour of use.
+function freshIdToken() {
+  return new Promise((resolve) => {
+    const cognitoUser = userPool.getCurrentUser()
+    if (!cognitoUser) return resolve(null)
+    cognitoUser.getSession((err, session) => {
+      if (err || !session?.isValid()) return resolve(null)
+      resolve(session.getIdToken().getJwtToken())
+    })
+  })
+}
 
 // signIn(email, password) -> resolves with the caller's profile row
 // (role, team_code, name, avatar, …) fetched from GET /api/profile/me — OR,
@@ -31,6 +46,7 @@ export function signIn(email, password) {
       onSuccess: async (session) => {
         _pendingChallenge = null
         setAuthToken(session.getIdToken().getJwtToken())
+        setAuthTokenProvider(freshIdToken)
         try {
           resolve(await getMyProfile())
         } catch (err) {
@@ -75,6 +91,7 @@ export function completeNewPasswordChallenge(newPassword) {
       onSuccess: async (session) => {
         _pendingChallenge = null
         setAuthToken(session.getIdToken().getJwtToken())
+        setAuthTokenProvider(freshIdToken)
         try {
           resolve(await getMyProfile())
         } catch (err) {
@@ -90,6 +107,7 @@ export function signOut() {
   const cognitoUser = userPool.getCurrentUser()
   if (cognitoUser) cognitoUser.signOut()
   setAuthToken(null)
+  setAuthTokenProvider(null)
 }
 
 // Restores a Cognito session (from local storage) without a fresh login —
@@ -101,6 +119,7 @@ export function restoreSession() {
     cognitoUser.getSession(async (err, session) => {
       if (err || !session?.isValid()) return resolve(null)
       setAuthToken(session.getIdToken().getJwtToken())
+      setAuthTokenProvider(freshIdToken)
       try {
         resolve(await getMyProfile())
       } catch {
