@@ -6,4 +6,3 @@ npm-debug.log
 .git
 .gitignore
 *.md
-schema.sql
