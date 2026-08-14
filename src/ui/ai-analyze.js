@@ -2,14 +2,11 @@
 
 import { API_URL } from '../lib/api.js'
 
-const STORAGE_KEY = 'gyftr_openai_key'
-
-export function getStoredKey() {
-  const savedKey = (localStorage.getItem(STORAGE_KEY) || '').trim()
-  if (savedKey) return savedKey
-  return import.meta.env.VITE_OPENAI_API_KEY || ''
-}
-export function saveKey(k) { localStorage.setItem(STORAGE_KEY, (k || '').trim()) }
+// The OpenAI key lives on the server (OPENAI_API_KEY) and never reaches the
+// browser. It used to be read from VITE_OPENAI_API_KEY, which Vite compiles
+// into the public bundle — anyone loading the portal could read it — with a
+// localStorage fallback for pasting your own. Both are gone; the API route
+// authenticates the caller and uses the server's key.
 
 function buildBrief(a) {
   const clauses = (a.clauses || []).filter(c => c.changes && c.changes.some(ch => ch && ch !== 'NA' && ch.trim()))
@@ -56,14 +53,11 @@ Return this exact JSON:
 }`
 }
 
-export async function analyzeWithAI(agreement, apiKey, docText) {
-  const key = apiKey || getStoredKey()
-  if (!key) throw new Error('no_key')
-
+export async function analyzeWithAI(agreement, docText) {
   const res = await fetch(`${API_URL}/api/ai-analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ agreement, apiKey: key, docText })
+    body: JSON.stringify({ agreement, docText })
   })
 
   const data = await res.json().catch(() => ({}))
@@ -225,7 +219,5 @@ export function renderAIResult(result, container) {
     </div>`
 }
 
-window.gAIGetKey  = getStoredKey
-window.gAISaveKey = saveKey
 window.gAIAnalyze = analyzeWithAI
 window.gAIRender  = renderAIResult

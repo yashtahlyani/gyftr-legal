@@ -2256,7 +2256,7 @@ function renderAnMain(){
 
 /* ════════ AI ANALYSIS MODE ════════ */
 function renderAnAiMode(a,main){
-  const hasKey=!!(window.gAIGetKey&&window.gAIGetKey());
+  const hasKey=true; // key is server-side; no per-user key needed
   const cachedResult=a._aiAnalysis||null;
   const drafts=a.drafts||[];
 
@@ -2334,22 +2334,17 @@ window._selectAllAIDrafts=function(agId){
   renderAnAiMode(a,main);
 };
 
+// Retained so any stale markup calling it cannot throw. Users no longer
+// supply an OpenAI key — it is configured on the server.
 window._saveAIKey=function(){
-  const v=document.getElementById("aiKeyInput")?.value?.trim();
-  if(!v){showToast("Enter your OpenAI key first");return;}
-  if(window.gAISaveKey) window.gAISaveKey(v);
-  showToast("Key saved","green");
-  document.getElementById("aiKeyBar").style.display="none";
-  // re-render to show Analyse button enabled state
-  renderAnMain();
+  const bar=document.getElementById("aiKeyBar");
+  if(bar) bar.style.display="none";
 };
 
 const AI_LOADING_MSGS=["Sending to GPT-4o mini…","Reading draft history…","Mapping clause outcomes…","Checking what's still open…","Writing negotiation brief…"];
 window._runAIAnalysis=async function(agId){
   const a=AGs.find(x=>x.id===agId);
   if(!a)return;
-  const key=window.gAIGetKey?window.gAIGetKey():"";
-  if(!key){showToast("OpenAI key not configured");return;}
   const loadEl=document.getElementById("aiLoadingState");
   const resultEl=document.getElementById("aiResultArea");
   const runBtn=document.getElementById("aiRunBtn");
@@ -2380,7 +2375,7 @@ window._runAIAnalysis=async function(agId){
   }
 
   try{
-    const result=await window.gAIAnalyze(aFiltered,key,docText);
+    const result=await window.gAIAnalyze(aFiltered,docText);
     a._aiAnalysis=result;
     clearInterval(interval);
     if(loadEl) loadEl.style.display="none";
@@ -2392,8 +2387,7 @@ window._runAIAnalysis=async function(agId){
     if(loadEl) loadEl.style.display="none";
     if(resultEl){resultEl.style.display="";}
     if(runBtn){runBtn.disabled=false;runBtn.innerHTML='<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3.5L13 7l-3.5 1.5L8 12l-1.5-3.5L3 7l3.5-1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg> Re-Analyse with AI';}
-    if(e.message==="no_key"){document.getElementById("aiKeyBar").style.display="flex";showToast("Enter your OpenAI API key");}
-    else if(e.message==="invalid_key"){showToast("Invalid OpenAI key — check and try again");}
+    if(e.message==="no_key"||e.message==="invalid_key"){showToast("AI analysis is not configured on the server — contact an admin");}
     else{showToast("AI error: "+e.message);}
   }
 };

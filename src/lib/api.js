@@ -158,10 +158,11 @@ export function dismissReminder(reminderId, teamCode) {
 }
 
 // ── AI clause analysis ───────────────────────────────────────────────────
-export function analyzeWithAI(agreement, apiKey, docText) {
+export function analyzeWithAI(agreement, docText) {
+  // No apiKey argument by design — the OpenAI key is server-side only.
   return apiFetch('/api/ai-analyze', {
     method: 'POST',
-    body: JSON.stringify({ agreement, apiKey, docText }),
+    body: JSON.stringify({ agreement, docText }),
   })
 }
 

@@ -8,7 +8,7 @@
 // clause-diff function) both existed in the old stack but were never called
 // by any UI code path (confirmed in docs/KT.md §6.5 item 6) — neither is
 // ported here. If the Claude-based path is wanted later, its prompt is
-// preserved in supabase/functions/analyse-drafts/index.ts for reference.
+// preserved in docs/reference/analyse-drafts-unported.ts for reference.
 
 import { Router } from 'express';
 
@@ -16,11 +16,18 @@ const router = Router();
 
 router.post('/ai-analyze', async (req, res) => {
   try {
-    const { agreement, apiKey, docText } = req.body || {};
-    const key = (apiKey || process.env.OPENAI_API_KEY || '').trim();
+    const { agreement, docText } = req.body || {};
+
+    // The key is server-side only. It used to accept an `apiKey` from the
+    // request body and prefer it over this one, which meant the browser had to
+    // hold a usable OpenAI key — and a VITE_ prefixed one was being compiled
+    // into the public bundle, where anyone could read it. Any apiKey still
+    // sent by an older client is deliberately ignored.
+    const key = (process.env.OPENAI_API_KEY || '').trim();
 
     if (!key) {
-      return res.status(400).json({ error: 'no_key' });
+      console.error('[ai-analyze] OPENAI_API_KEY is not set on the server');
+      return res.status(503).json({ error: 'AI analysis is not configured. Contact an admin.' });
     }
 
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
