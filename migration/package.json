@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "create-cognito-users": "node create-cognito-users.js",
+    "force-password-reset": "node force-password-reset.js",
+    "migrate-email-domain": "node migrate-email-domain.js",
     "smoke-test": "node smoke-test.js"
   },
   "dependencies": {

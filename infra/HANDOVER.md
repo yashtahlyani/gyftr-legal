@@ -51,21 +51,15 @@ cd migration && npm install && cd ..           # migration scripts
 Follow **`infra/aws-setup.md`** in order: RDS → Secrets Manager → Cognito →
 S3 (drafts bucket) → EC2 → ALB → S3 + CloudFront (frontend).
 
-### 3. Migrate data from Supabase → RDS
+### 3. Database schema
 
-```bash
-cd migration
-export SUPABASE_URL=https://aiaeruajrbrxkoaqzdpp.supabase.co
-export SUPABASE_PAT=<personal-access-token>   # from whoever holds Supabase access
-export RDS_HOST=... RDS_USER=gyftr_admin RDS_PASSWORD=... RDS_DB=gyftr_legal
-export DRAFTS_BUCKET=gyftr-legal-drafts
-export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_REGION=ap-south-1
-node migrate-db.js
-```
+The migration off the old stack is **done** and the import script has been
+removed — the portal is AWS-only, and there is no data to bring across any
+more. `backend/schema.sql` is applied automatically when the API starts; it is
+idempotent, so restarting is always safe.
 
-Copies every agreement, draft (row + file), team status, remark, history
-entry, clause, clause change, reminder, signature, and profile — preserving
-every ID. Safe to re-run.
+If you ever need the historical importer, it is in git history
+(`git log --diff-filter=D -- migration/migrate-db.js`).
 
 ### 4. Create Cognito accounts for the 4 real users
 

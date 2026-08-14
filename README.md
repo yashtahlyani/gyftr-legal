@@ -52,12 +52,13 @@ gyftr-legal/
 │   ├── middleware/
 │   ├── routes/
 │   └── schema.sql            # Plain Postgres schema for RDS
-├── migration/                # One-time Supabase → AWS migration scripts
-│   ├── migrate-db.js
+├── migration/                # Operational AWS scripts (all support --dry-run)
 │   ├── create-cognito-users.js
+│   ├── force-password-reset.js
+│   ├── migrate-email-domain.js   # not needed: both email domains are accepted
 │   └── smoke-test.js
 ├── infra/
-│   ├── aws-setup.md           # Full AWS provisioning + deploy guide
+│   ├── aws-setup.md           # Full AWS provisioning guide (first-time)
 │   └── HANDOVER.md            # Plain-language overview, logins, cookbook
 └── supabase/                  # Old Supabase project files — kept for
     ├── schema.sql              # reference only; no longer deployed.
@@ -88,10 +89,13 @@ against RDS.
 
 ### Step 4 — Migrate or seed users
 
-For a fresh environment with no existing data, create the 4 team profiles
-directly in RDS and run `migration/create-cognito-users.js` to create their
-Cognito accounts. For migrating real data from the original Supabase
-project, see `migration/migrate-db.js` and `infra/aws-setup.md` §8.
+For a fresh environment, create the 4 team profiles directly in RDS and run
+`migration/create-cognito-users.js` to create their Cognito accounts. The
+portal does not auto-create profiles: a Cognito user with no `profiles` row
+gets a visible "No profile linked to this account" error rather than silently
+being given default access.
+
+To deploy a new release, follow **[`DEPLOY.md`](DEPLOY.md)**.
 
 ### Step 5 — Start dev server
 ```bash
