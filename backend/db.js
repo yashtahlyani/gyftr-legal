@@ -42,6 +42,47 @@ async function applySchema() {
   console.log('[db] Schema applied (idempotent)');
 }
 
+// Init state, so the API can answer "why is this broken?" instead of dying.
+let _ready = false;
+let _lastError = null;
+
+export const isDbReady = () => _ready;
+export const dbLastError = () => (_lastError ? _lastError.message : null);
+
+/**
+ * Connect, retrying in the background forever.
+ *
+ * initDb() throwing used to kill the process: start() awaited it, the catch
+ * called process.exit(1), the container crash-looped, the target group emptied
+ * and the ALB served a bare 503 with no information. A transient RDS problem
+ * therefore looked identical to a broken deploy, and there was no HTTP surface
+ * left to ask what was wrong.
+ *
+ * Now the API stays up and says what is wrong, and recovers on its own when
+ * the database comes back.
+ */
+export async function initDbWithRetry({ intervalMs = 10000 } = {}) {
+  let attempt = 0;
+  for (;;) {
+    attempt++;
+    try {
+      await initDb();
+      _ready = true;
+      _lastError = null;
+      console.log(`[db] Ready (attempt ${attempt}).`);
+      return;
+    } catch (err) {
+      _ready = false;
+      _lastError = err;
+      console.error(`[db] Not ready (attempt ${attempt}): ${err.message}`);
+      if (attempt === 1) {
+        console.error('[db] The API is up and will keep retrying. GET /health/deep for the current reason.');
+      }
+      await new Promise(r => setTimeout(r, intervalMs));
+    }
+  }
+}
+
 export async function initDb() {
   const creds = await getDbCredentials();
 
