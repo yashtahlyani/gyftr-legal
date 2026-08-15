@@ -149,3 +149,33 @@ Rollback is `git checkout <previous-sha> && npm install && pm2 restart` for the
 backend, plus re-syncing the previous `dist/` to S3 for the frontend. The
 schema changes are additive, so an older build runs fine against the newer
 database.
+
+---
+
+## Something is broken and you do not know why — start here
+
+```bash
+cd scripts && npm install
+npm run doctor
+```
+
+Needs no AWS credentials and no VPN — run it from anywhere. It walks DNS →
+load balancer → API → database → CORS and stops at the first layer that is
+actually broken, then prints what to change.
+
+Paste its output when reporting a problem. "It is still not working" cannot be
+acted on; this can.
+
+```bash
+# non-default URLs
+npm run doctor -- --frontend https://legal.gyftr.net --api https://legal-api.gyftr.net
+```
+
+Common verdicts:
+
+| It says | It means |
+|---|---|
+| Frontend 503 | The load balancer has no healthy target for the frontend container. Check the ECS running vs desired count and the target group. |
+| API 503 | Same for the API — usually the container is crash-looping. Check the task logs. |
+| API up, database not ready | The API is fine; it cannot reach RDS. It now says exactly why and keeps retrying. Check `DB_HOST` / `AWS_SECRET_NAME` and the RDS security group. |
+| CORS does not allow the frontend | `FRONTEND_URL` in the API environment must match the site origin exactly, no trailing slash. curl works, the browser does not. |
