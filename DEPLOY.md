@@ -33,6 +33,19 @@ pm2 restart gyftr-legal-api
 `backend/schema.sql` applies itself on start-up. Every statement is
 `IF NOT EXISTS`, so restarting is safe and there is no manual migration step.
 
+Check it came up — and that it can actually reach the database:
+
+```bash
+curl -s localhost:7978/health        # {"ok":true} — process is alive
+curl -s localhost:7978/health/deep   # {"ok":true,"database":"reachable"}
+```
+
+`/health` only proves the process is running; it is what the ALB polls and it
+deliberately does not touch the database. **`/health/deep` is the one that
+matters when something is wrong** — it returns 503 if the database is
+unreachable. "pm2 says online and the ALB says healthy while the portal is
+dead" is exactly the gap it closes.
+
 ## 2. Frontend
 
 ```bash
