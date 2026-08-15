@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "audit-access": "node audit-access.js",
+    "check-login": "node check-login.js",
     "create-cognito-users": "node create-cognito-users.js",
     "doctor": "node doctor.js",
     "force-password-reset": "node force-password-reset.js",
@@ -14,6 +15,7 @@
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.550.0",
     "@aws-sdk/client-s3": "^3.550.0",
+    "amazon-cognito-identity-js": "^6.3.12",
     "pg": "^8.11.3"
   }
 }
