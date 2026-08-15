@@ -7,10 +7,29 @@
 import { CognitoUserPool, CognitoUser, AuthenticationDetails } from 'amazon-cognito-identity-js'
 import { setAuthToken, setAuthTokenProvider, getMyProfile } from './api.js'
 
-const userPool = new CognitoUserPool({
-  UserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
-  ClientId:   import.meta.env.VITE_COGNITO_CLIENT_ID,
-})
+// Built without VITE_COGNITO_* (a missing frontend/.env.local at build time),
+// this constructor throws "Both UserPoolId and ClientId are required" while the
+// module is still loading — before anything renders. The result is a blank page
+// with no clue why, and the build that produced it succeeded silently. Fail
+// into a readable message instead.
+function createUserPool() {
+  const UserPoolId = import.meta.env.VITE_COGNITO_USER_POOL_ID
+  const ClientId   = import.meta.env.VITE_COGNITO_CLIENT_ID
+  if (!UserPoolId || !ClientId) return null
+  try {
+    return new CognitoUserPool({ UserPoolId, ClientId })
+  } catch (err) {
+    console.error('[auth-cognito] Cognito pool could not be created:', err.message)
+    return null
+  }
+}
+
+const userPool = createUserPool()
+
+export const AUTH_CONFIG_ERROR = userPool
+  ? null
+  : 'This build is missing its Cognito configuration (VITE_COGNITO_USER_POOL_ID / VITE_COGNITO_CLIENT_ID). Rebuild the frontend with frontend/.env.local present.'
+
 
 // Holds the in-progress Cognito challenge between signIn() returning
 // { mustChangePassword: true } and the caller submitting a new password via
@@ -23,6 +42,7 @@ let _pendingChallenge = null
 // hour of use.
 function freshIdToken() {
   return new Promise((resolve) => {
+    if (!userPool) return resolve(null)
     const cognitoUser = userPool.getCurrentUser()
     if (!cognitoUser) return resolve(null)
     cognitoUser.getSession((err, session) => {
@@ -40,6 +60,7 @@ function freshIdToken() {
 // before treating the result as a profile — see src/login.js.
 export function signIn(email, password) {
   return new Promise((resolve, reject) => {
+    if (!userPool) return reject(new Error(AUTH_CONFIG_ERROR))
     const cognitoUser = new CognitoUser({ Username: email, Pool: userPool })
     const authDetails  = new AuthenticationDetails({ Username: email, Password: password })
     cognitoUser.authenticateUser(authDetails, {
@@ -116,7 +137,7 @@ export function completeNewPasswordChallenge(newPassword) {
 }
 
 export function signOut() {
-  const cognitoUser = userPool.getCurrentUser()
+  const cognitoUser = userPool?.getCurrentUser()
   if (cognitoUser) cognitoUser.signOut()
   setAuthToken(null)
   setAuthTokenProvider(null)
@@ -126,6 +147,7 @@ export function signOut() {
 // used by main.js on page load so users don't have to log in every visit.
 export function restoreSession() {
   return new Promise((resolve) => {
+    if (!userPool) return resolve(null)
     const cognitoUser = userPool.getCurrentUser()
     if (!cognitoUser) return resolve(null)
     cognitoUser.getSession(async (err, session) => {

@@ -1,4 +1,4 @@
-import { signIn, completeNewPasswordChallenge } from './lib/auth-cognito.js'
+import { signIn, completeNewPasswordChallenge, AUTH_CONFIG_ERROR } from './lib/auth-cognito.js'
 
 const DEMO_EMAILS = {
   legal:      'nitin@gyftr.net',
@@ -243,6 +243,14 @@ window.handleSetNewPassword = async function (ev) {
 
   // Explain a redirect that came from app.html rather than leaving the user
   // guessing why they were signed out.
+  // A build with no Cognito config cannot sign anyone in. Say so plainly
+  // rather than letting people fail attempts against a pool that never existed.
+  if (AUTH_CONFIG_ERROR) {
+    showError(AUTH_CONFIG_ERROR)
+    const btn = document.getElementById('loginBtn')
+    if (btn) btn.disabled = true
+  }
+
   const notice = sessionStorage.getItem('auth_notice')
   if (notice) {
     sessionStorage.removeItem('auth_notice')
