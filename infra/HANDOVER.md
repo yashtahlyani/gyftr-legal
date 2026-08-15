@@ -41,9 +41,7 @@ database credentials and enforces who's allowed to do what. See
 git clone <repo-url> gyftr-legal
 cd gyftr-legal
 
-npm install                                    # frontend
-cd backend   && npm install && cd ..           # backend
-cd scripts && npm install && cd ..           # migration scripts
+npm run install:all      # frontend + backend + scripts
 ```
 
 ### 2. Provision AWS
@@ -64,10 +62,15 @@ If you ever need the historical importer, it is in git history
 ### 4. Create Cognito accounts for the 4 real users
 
 ```bash
+cd scripts
 export COGNITO_USER_POOL_ID=<from Cognito console>
 export AWS_REGION=ap-south-1
-node create-cognito-users.js
+npm run create-cognito-users
 ```
+
+Each user gets a **random** temporary password, printed as it runs. Capture
+that output — it is the only copy. If you would rather everyone share one
+temporary password, run `npm run force-password-reset` afterwards instead.
 
 ### 5–8. Configure envs, build, deploy
 
@@ -86,17 +89,42 @@ All 4 real accounts (seeded via the original `supabase/seed.sql`, now RDS `profi
 | pankaj.mehta@gyftr.net | Pankaj Mehta | Business | B |
 | nikhil@gyftr.net | Nikhil | Compliance | C |
 
-**Passwords**: each account got a random AWS-generated temporary password
-from `create-cognito-users.js` — printed to the terminal when it ran (share
-it with that person over a secure channel, not email/Slack in plaintext).
-They must set their own password on first login (Cognito's standard
-"new password required" flow). Nobody has a shared default password.
+**Passwords — read this before telling anyone what theirs is.**
 
-If you need to reset someone's password: **Cognito console → User pools →
-gyftr-legal-users → Users → (user) → Reset password**, or:
+There are two different temporary passwords in play, and confusing them wastes
+a lot of time:
+
+| How the account was set up | Password |
+|---|---|
+| `scripts/create-cognito-users.js` | a **random** one per user (`Gy!xxxxxxT1`), printed to the terminal when the script ran |
+| `scripts/force-password-reset.js` | **`Default@123`** for everyone (override with `TEMP_PASSWORD`) |
+
+So `Default@123` only works **after** `force-password-reset.js` has been run.
+On a pool where accounts were created and never reset, it will be rejected —
+and because Cognito collapses the error, it looks identical to a wrong
+password. If the random passwords from the original run are lost, that is the
+normal situation, and the fix is to reset everyone:
+
 ```bash
-aws cognito-idp admin-reset-user-password --user-pool-id <pool-id> --username <email>
+cd scripts
+npm run force-password-reset -- --dry-run   # see who would be reset
+npm run force-password-reset                # everyone → Default@123, must change on next login
 ```
+
+Either way the account lands in `FORCE_CHANGE_PASSWORD`, so the portal prompts
+for a new password on first login and no shared password survives.
+
+**Before assuming the password is wrong**, check what Cognito actually says —
+"Incorrect email or password" is also what it returns when the account does not
+exist in the pool the frontend is built against:
+
+```bash
+cd scripts
+npm run check-login -- --email <email> --password '<password>'   --pool <pool-id> --client <client-id>
+```
+
+To reset one person: `npm run force-password-reset -- --only=<email>`, or from
+the Cognito console → User pools → Users → (user) → Reset password.
 
 **Demo mode is development-only.** The 4 role pills on the login page log in
 with sample data and no password, but that path is now gated on
@@ -137,8 +165,8 @@ comment at the top of `backend/routes/clauses.js` for the full note.
 | Change what a role can do | `backend/authz.js` — one function per rule, all in one file |
 | Add a new API field to an existing table | Add the column in `backend/schema.sql` **and** run the matching `ALTER TABLE` on the live RDS DB (schema.sql itself isn't re-run on an existing DB), then thread it through the relevant `backend/routes/*.js` and `src/lib/api.js` |
 | Add a new table/resource | New file in `backend/routes/`, register it in `backend/server.js`, add the matching functions to `src/lib/api.js` |
-| Make "nudges" (reminders) persist across refresh | Currently reminders are DB-backed on the server (`backend/routes/reminders.js`, ported for RLS parity) but the frontend's `sendNudge` in `src/ui/app-logic.js` never calls it — same as before the migration. Wire it up by calling `sendReminder()` from `src/lib/api.js` inside `sendNudge` |
-| Make drafts (Drafts modal) persist across refresh | Same situation — `backend/routes/drafts.js` + S3 storage exist and work, but `addDraft`/`toggleDraftDir` in `app-logic.js` are still local-only, matching pre-migration behavior. Wire `uploadDraft()`/`updateDraftDirection()` from `src/lib/api.js` in if/when you want real file persistence there |
+| Reminders | Persisted. `sendNudge` calls `sendReminder()`; a failure is queued in `frontend/src/lib/writeQueue.js` and replayed on the next successful load. |
+| Drafts | Persisted. `addDraft` calls `addDraftNote()` and rolls the row back on failure, queueing it for retry. File upload via `uploadDraft()` exists but the Drafts modal only collects date/direction/note. |
 | Change the AI model/prompt | `backend/routes/ai-analyze.js` (this is what's live). The old Supabase Edge Functions are deleted; the unported Claude-based prompt is kept at `docs/reference/analyse-drafts-unported.ts` |
 | Rotate the OpenAI/Adobe keys | Update `backend/.env` on the EC2 instance, then `pm2 restart gyftr-legal-api` |
 | Rotate DB credentials | Update the `gyftr/legal/db` secret in Secrets Manager — the backend re-reads it on every restart, no code change needed |
