@@ -4,7 +4,16 @@ Operational runbook for shipping a new release to AWS. For first-time
 provisioning of the AWS resources themselves, see
 [`infra/aws-setup.md`](infra/aws-setup.md).
 
-Everything below is run on the EC2 instance unless stated otherwise.
+Both the backend and frontend run as Docker containers on ECS (built via
+`backend/buildspec.yml` / `frontend/buildspec.yml`, pushed to ECR) — **not**
+on an EC2 instance you SSH into, and the frontend is **not** synced to S3.
+`docker-compose.yml` mirrors the same two-container shape for local testing.
+Steps 1–2 below assume CodeBuild/CodePipeline (or an equivalent manual
+`docker build && docker push`) already exists for this branch — if you're
+setting that up for the first time, the cluster name, service names, and
+whether a push here auto-triggers a deploy are decisions made outside this
+repo (task definitions aren't checked in). Confirm with whoever provisioned
+the ECS side before assuming either of those.
 
 ---
 
@@ -24,50 +33,69 @@ be treated as compromised.
 
 ## 1. Backend
 
+Merging/pushing to this branch should trigger `backend/buildspec.yml` in
+CodeBuild (if CodePipeline is watching this branch — confirm that, don't
+assume it). That builds `backend/Dockerfile`, pushes to ECR, and writes
+`imagedefinitions.json`, which an ECS deploy stage uses to roll the API
+service. If there's no pipeline wired up yet, the equivalent by hand is:
+
 ```bash
-cd /app/gyftr-legal && git pull
-npm --prefix backend install
-pm2 restart gyftr-legal-api
+docker build --platform linux/arm64 -t <backend-ecr-repo>:<tag> ./backend
+docker push <backend-ecr-repo>:<tag>
+aws ecs update-service --cluster <cluster> --service <backend-service> --force-new-deployment
 ```
 
-`backend/schema.sql` applies itself on start-up. Every statement is
-`IF NOT EXISTS`, so restarting is safe and there is no manual migration step.
+`backend/schema.sql` applies itself on start-up, and `backend/seed.sql`
+(the 4 real profiles) runs right after it — both idempotent, so a fresh
+task starting up is safe with no manual migration step.
 
 Check it came up — and that it can actually reach the database:
 
 ```bash
-curl -s localhost:7978/health        # {"ok":true} — process is alive
-curl -s localhost:7978/health/deep   # {"ok":true,"database":"reachable"}
+curl -s https://<api-host>/health        # {"ok":true} — process is alive
+curl -s https://<api-host>/health/deep   # {"ok":true,"database":"reachable"}
 ```
 
 `/health` only proves the process is running; it is what the ALB polls and it
 deliberately does not touch the database. **`/health/deep` is the one that
 matters when something is wrong** — it returns 503 if the database is
-unreachable. "pm2 says online and the ALB says healthy while the portal is
+unreachable. "ECS says the task is running and healthy while the portal is
 dead" is exactly the gap it closes.
 
 ## 2. Frontend
 
+Same pipeline shape as the backend — `frontend/buildspec.yml` builds
+`frontend/Dockerfile` (a Vite build served by `serve` on port 7979, not a
+static S3 bundle) and pushes to ECR for its own ECS service. By hand:
+
 ```bash
-cd /app/gyftr-legal
-npm --prefix frontend install
-
-# frontend/.env.local is gitignored — create it on a fresh checkout.
-# Without it the build succeeds but every login fails.
-cp frontend/.env.example frontend/.env.local     # fill VITE_API_URL + VITE_COGNITO_*
-
-npm run build                                     # outputs to frontend/dist
-aws s3 sync frontend/dist/ s3://<legal-bucket>/ --delete
-aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
+docker build --platform linux/arm64 \
+  --build-arg VITE_API_URL=https://<api-host> \
+  --build-arg VITE_COGNITO_USER_POOL_ID=<pool-id> \
+  --build-arg VITE_COGNITO_CLIENT_ID=<client-id> \
+  -t <frontend-ecr-repo>:<tag> ./frontend
+docker push <frontend-ecr-repo>:<tag>
+aws ecs update-service --cluster <cluster> --service <frontend-service> --force-new-deployment
 ```
 
-Never put a secret in `frontend/.env.local`. Anything prefixed `VITE_` is compiled into
-the public bundle.
+All `VITE_*` values are baked in at **build** time via `--build-arg` — there
+is no `frontend/.env.local` step in this flow (that file is for local
+`npm run dev` only, see `frontend/.env.example`). Get the build wrong and
+the container serves fine but every login fails silently — this is the exact
+failure `.github/workflows/ci.yml`'s frontend build step guards against
+before it ever reaches a container.
+
+Never put a secret in a `VITE_*` build arg. Anything prefixed `VITE_` is
+compiled into the public bundle.
 
 ## 3. Require every user to set their own password
 
+Run from your own machine (or anywhere with these AWS credentials
+configured) — these ops scripts talk to Cognito/RDS directly over the
+network, they don't run inside either container:
+
 ```bash
-cd /app/gyftr-legal/scripts && npm install
+cd scripts && npm install
 
 export COGNITO_USER_POOL_ID=<pool-id>
 export AWS_REGION=ap-south-1
@@ -111,8 +139,8 @@ npm run smoke-test
 ```
 
 Confirms the API is reachable, authenticated and actually reading RDS — rather
-than `pm2 status` merely saying "online". Exits non-zero on failure, so it is
-safe to wire into a deploy script.
+than the ECS task merely showing as "running". Exits non-zero on failure, so
+it is safe to wire into a deploy script.
 
 ---
 
@@ -142,13 +170,15 @@ carrying the old flag.
 | `No profile linked to this account` | The Cognito user has no row in `profiles`. Add one — the portal does not auto-create profiles, by design. |
 | AI analysis returns 503 | `OPENAI_API_KEY` is not set in `backend/.env`. |
 | Every API call returns 401 | Frontend built without `VITE_COGNITO_*`, or the token expired — sign out and back in. |
-| Browser blocks API calls (CORS) | `FRONTEND_URL` in `backend/.env` does not exactly match the CloudFront origin. |
+| Browser blocks API calls (CORS) | `FRONTEND_URL` in the API's environment does not exactly match the origin the browser actually loads the frontend from. |
 | New entries do not persist | Check the browser console for a failed write; failed writes are queued in `frontend/src/lib/writeQueue.js` and replayed on the next successful load. |
 
-Rollback is `git checkout <previous-sha> && npm install && pm2 restart` for the
-backend, plus re-syncing the previous `dist/` to S3 for the frontend. The
-schema changes are additive, so an older build runs fine against the newer
-database.
+Rollback is redeploying the previous image tag for each ECS service
+(`aws ecs update-service --cluster <cluster> --service <service> --task-definition <family>:<previous-revision>`,
+or re-running the pipeline against the previous commit) — there is no `dist/`
+to re-sync and no process to `pm2 restart`, since neither container is
+managed that way. Schema changes are additive, so an older image runs fine
+against the newer database.
 
 ---
 

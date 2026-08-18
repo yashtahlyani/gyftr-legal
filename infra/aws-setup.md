@@ -1,9 +1,21 @@
 # AWS Setup Guide — GyfTR Legal Portal
 
+> **Superseded on deployment mechanics.** This doc was written for an
+> EC2 + PM2 backend and an S3 + CloudFront static frontend. The AWS side
+> that actually got built runs both frontend and backend as **Docker
+> containers on ECS** behind an ALB instead (see `backend/Dockerfile`,
+> `frontend/Dockerfile`, `backend/buildspec.yml`, `frontend/buildspec.yml`,
+> `docker-compose.yml`, and **`DEPLOY.md`**, which is current). RDS,
+> Secrets Manager, Cognito, and the private drafts S3 bucket below are
+> still accurate — only §5–7 (EC2/ALB/S3+CloudFront for compute+hosting)
+> describe an architecture that isn't what's running. Kept for the parts
+> that are still right; don't follow §5–7 as deploy instructions.
+
 Full migration from Vercel + Supabase to a self-hosted AWS stack.
 **Region**: ap-south-1 (Mumbai) throughout, matching the sibling GyfTR Portal migration.
 
-Target architecture: **S3 + CloudFront** (static frontend) → **ALB + EC2** running an
+Target architecture (original plan — see banner above for what's actually
+running): **S3 + CloudFront** (static frontend) → **ALB + EC2** running an
 Express API → **RDS Postgres** (private) → **Cognito** (auth), with **Secrets Manager**
 holding DB credentials, and a second private **S3** bucket for draft files.
 

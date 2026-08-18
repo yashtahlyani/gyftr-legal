@@ -1,6 +1,19 @@
 GyFTR Legal Portal
 Complete Setup, Deployment & Handover Guide
 
+> **Superseded on deployment mechanics as of the ECS migration.** This
+> document was written for an EC2 + PM2 backend and an S3 + CloudFront
+> static frontend. What actually got built runs both the frontend and
+> backend as Docker containers on ECS behind an ALB instead — see
+> `backend/Dockerfile`, `frontend/Dockerfile`, `backend/buildspec.yml`,
+> `frontend/buildspec.yml`, and **`DEPLOY.md`**, which is the current
+> operational runbook. RDS, Secrets Manager, Cognito, and the drafts S3
+> bucket setup below are still accurate; the EC2/ALB and S3+CloudFront
+> hosting sections are not — don't follow those as deploy steps. `backend/seed.sql`
+> also didn't exist when this was written: it now seeds the 4 real profiles
+> automatically on every boot, so the manual profile-creation step referenced
+> below is no longer required (see `README.md` and `infra/HANDOVER.md`).
+
 This document provides all the information required to set up, migrate, deploy, operate, and maintain the GyFTR Legal Portal.
 It is intended to serve as a complete technical handover for the next developer or administrator responsible for the portal.
 Please read the document completely before beginning the migration or deployment process.

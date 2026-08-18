@@ -18,13 +18,19 @@ backend, auth, and hosting changed).
 ## Architecture, plain language
 
 ```
-Browser  ──>  CloudFront + S3  (static frontend: index.html login, app.html portal)
-Browser  ──>  ALB + EC2 (Express API)  ──>  RDS Postgres (private)
-                                       └─>  S3 (private, draft files)
+Browser  ──>  ALB ──>  ECS: frontend container  (Vite build served by `serve`, port 7979)
+Browser  ──>  ALB ──>  ECS: backend container   (Express API, port 7978)  ──>  RDS Postgres (private)
+                                                                           └─>  S3 (private, draft files)
 Browser  ──>  Cognito  (login — returns a JWT the frontend sends on every API call)
 Express API  ──>  OpenAI (AI clause risk analysis — unrelated 3rd party, unchanged)
 Express API  ──>  Adobe Sign (e-signature — unrelated 3rd party, unchanged)
 ```
+
+Both the frontend and backend are Docker containers built by
+`frontend/buildspec.yml` / `backend/buildspec.yml` and run on ECS — **not**
+S3 + CloudFront and **not** EC2 + PM2 (that was the original plan; see the
+banner at the top of `infra/aws-setup.md`). `DEPLOY.md` is the current
+operational runbook.
 
 The frontend never talks to the database directly anymore — every read/write
 goes through the Express API, which is the **only** thing that holds
@@ -46,8 +52,11 @@ npm run install:all      # frontend + backend + scripts
 
 ### 2. Provision AWS
 
-Follow **`infra/aws-setup.md`** in order: RDS → Secrets Manager → Cognito →
-S3 (drafts bucket) → EC2 → ALB → S3 + CloudFront (frontend).
+RDS, Secrets Manager, Cognito, and the private drafts S3 bucket: follow
+`infra/aws-setup.md` §1–4. For compute/hosting, the real setup is ECS
+containers behind an ALB, not the EC2/S3+CloudFront in that doc's later
+sections — see `DEPLOY.md` and the `buildspec.yml`/`Dockerfile` in each of
+`backend/` and `frontend/` for what's actually there.
 
 ### 3. Database schema
 
@@ -173,12 +182,13 @@ comment at the top of `backend/routes/clauses.js` for the full note.
 |---|---|
 | Add/remove a user | Add a `profiles` row (`insert into profiles (email, name, role, team_code) values (...)`), then re-run `scripts/create-cognito-users.js` — it only processes rows without a `cognito_sub` |
 | Change what a role can do | `backend/authz.js` — one function per rule, all in one file |
-| Add a new API field to an existing table | Add the column in `backend/schema.sql` **and** run the matching `ALTER TABLE` on the live RDS DB (schema.sql itself isn't re-run on an existing DB), then thread it through the relevant `backend/routes/*.js` and `src/lib/api.js` |
-| Add a new table/resource | New file in `backend/routes/`, register it in `backend/server.js`, add the matching functions to `src/lib/api.js` |
+| Add a new API field to an existing table | `schema.sql` runs on every boot, but `CREATE TABLE IF NOT EXISTS` doesn't add columns to a table that already exists — so add the column there **and** run the matching `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` by hand once against the live RDS DB, then thread it through the relevant `backend/routes/*.js` and `frontend/src/lib/api.js` |
+| Add a new table | Just add it to `schema.sql` (with `IF NOT EXISTS`) and deploy — the next boot creates it automatically, no manual step |
+| Add a new table/resource | New file in `backend/routes/`, register it in `backend/server.js`, add the matching functions to `frontend/src/lib/api.js` |
 | Reminders | Persisted. `sendNudge` calls `sendReminder()`; a failure is queued in `frontend/src/lib/writeQueue.js` and replayed on the next successful load. |
 | Drafts | Persisted. `addDraft` calls `addDraftNote()` and rolls the row back on failure, queueing it for retry. File upload via `uploadDraft()` exists but the Drafts modal only collects date/direction/note. |
 | Change the AI model/prompt | `backend/routes/ai-analyze.js` (this is what's live). The old Supabase Edge Functions are deleted; the unported Claude-based prompt is kept at `docs/reference/analyse-drafts-unported.ts` |
-| Rotate the OpenAI/Adobe keys | Update `backend/.env` on the EC2 instance, then `pm2 restart gyftr-legal-api` |
+| Rotate the OpenAI/Adobe keys | Update the backend task's environment (Secrets Manager entry or task-definition env var, however it's wired) and force a new ECS deployment of the backend service — see `DEPLOY.md` §1 |
 | Rotate DB credentials | Update the `gyftr/legal/db` secret in Secrets Manager — the backend re-reads it on every restart, no code change needed |
 
 ---
@@ -211,7 +221,7 @@ comment at the top of `backend/routes/clauses.js` for the full note.
   app before the migration (the app called Supabase inline in
   `src/ui/app-logic.js` instead of through these modules — see `docs/KT.md`
   §6.5 item 4). They're gone now; all live data access goes through the new
-  `src/lib/api.js`.
+  `frontend/src/lib/api.js`.
 - **Supabase Realtime was not used anywhere** in the app (confirmed by
   search before starting), so there was nothing to replace with polling.
 - **`profiles.email`** is a new column — the old Supabase `profiles` table
@@ -226,7 +236,7 @@ comment at the top of `backend/routes/clauses.js` for the full note.
 
 **Frontend loads but every screen is empty / login redirects immediately**
 Check `VITE_API_URL` in the frontend's build-time env — if it's wrong or
-unset, every `fetch` in `src/lib/api.js` fails silently for real accounts
+unset, every `fetch` in `frontend/src/lib/api.js` fails silently for real accounts
 (demo mode will still work, since it never calls the API). Check the browser
 console/network tab for the actual failing request.
 
@@ -242,21 +252,21 @@ select email, cognito_sub from profiles where email = '<their email>';
 frontend's exactly, and the token must be an **ID token**, not an access
 token (`backend/middleware/auth.js` verifies with `tokenUse: 'id'`).
 
-**Backend won't start — "DB not initialized"**
-`backend/db.js` fails fast if it can't reach RDS or Secrets Manager. Check
-the EC2 instance's IAM role has `secretsmanager:GetSecretValue` on
-`gyftr/legal/db`, and that the RDS security group allows inbound 5432 from
-the EC2 security group.
+**API is up but the portal doesn't work — database not ready**
+The backend no longer crashes or fails to start when RDS is unreachable —
+it stays up and keeps retrying in the background, so `pm2`/ECS-style
+"is it running" checks aren't enough on their own. Check
+`GET /health/deep` — `{"ok":true,"database":"reachable"}` means it's fine,
+anything else means it's still retrying and says why. Check the backend
+task's IAM role has `secretsmanager:GetSecretValue` on `gyftr/legal/db`
+(or the `DB_*` env vars are set directly), and that the RDS security group
+allows inbound 5432 from the backend service's security group. `scripts/doctor.js`
+walks this exact chain from the outside with no AWS credentials needed.
 
 **Draft upload/view fails with an S3 error**
-Check the EC2 IAM role has `s3:GetObject`/`s3:PutObject` on
-`arn:aws:s3:::gyftr-legal-drafts/*`, and that `DRAFTS_BUCKET` in
-`backend/.env` matches the real bucket name.
-
-**Migration script fails at "Fetching auth.users via Admin API"**
-`SUPABASE_PAT` needs Management API access on the source project, not just
-a regular anon/service key. Generate one from Supabase → Account → Access
-Tokens.
+Check the backend task's IAM role has `s3:GetObject`/`s3:PutObject` on
+`arn:aws:s3:::gyftr-legal-drafts/*`, and that `DRAFTS_BUCKET` in the
+backend's environment matches the real bucket name.
 
 ---
 
