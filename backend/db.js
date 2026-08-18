@@ -42,6 +42,20 @@ async function applySchema() {
   console.log('[db] Schema applied (idempotent)');
 }
 
+// Applies seed.sql on every boot — just the 4 real profiles every deploy
+// needs to exist before anyone can log in (a Cognito account with no
+// matching profiles row can't be linked). Every insert is
+// ON CONFLICT (email) DO UPDATE, so this is also a safe no-op once the
+// profiles already match. seed-demo.sql (fake sample agreements) is
+// deliberately NOT applied here — that one is opt-in, run by hand, and
+// must never touch an environment holding real agreements.
+async function applySeed() {
+  const seedPath = fileURLToPath(new URL('./seed.sql', import.meta.url));
+  const sql = await readFile(seedPath, 'utf8');
+  await pool.query(sql);
+  console.log('[db] Seed applied (idempotent)');
+}
+
 // Init state, so the API can answer "why is this broken?" instead of dying.
 let _ready = false;
 let _lastError = null;
@@ -104,6 +118,7 @@ export async function initDb() {
   console.log('[db] Connected to RDS Postgres:', creds.host);
   client.release();
   await applySchema();
+  await applySeed();
 }
 
 export function query(sql, params) {

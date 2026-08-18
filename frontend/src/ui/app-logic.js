@@ -679,6 +679,7 @@ function render(data){
           </div>
         </div>
       </td>
+      <td class="gx-td"><span style="font-size:12px;color:var(--ink-soft)">${(a.sp&&a.sp.L)||"—"}</span></td>
       <td class="gx-td">${renderClientStatusBadge(a.clientStatus||"awaiting",a.id)}</td>
       <td class="gx-td">
         ${role==="legal"
