@@ -82,11 +82,18 @@ idempotently on API start.
 
 ### Step 4 — Migrate or seed users
 
-For a fresh environment, create the team profiles directly in RDS and run
+`backend/seed.sql` (the 4 real profiles — Nitin/Neha/Pankaj Mehta/Nikhil)
+applies automatically on every API boot, right after `backend/schema.sql` —
+nothing to run by hand for a normal deploy. Once profiles exist, run
 `scripts/create-cognito-users.js` to create their Cognito accounts. The
-portal does not auto-create profiles: a Cognito user with no `profiles` row
-gets a visible "No profile linked to this account" error rather than silently
-being given default access.
+portal does not auto-create profiles for anyone not in that file: a Cognito
+user with no matching `profiles` row gets a visible "No profile linked to
+this account" error rather than silently being given default access.
+
+For local/dev testing with sample agreements to click through, run
+`backend/seed-demo.sql` **by hand, only against a database with no real
+agreements in it** — see the warning at the top of that file. It is never
+applied automatically.
 
 To deploy a new release, follow **[`DEPLOY.md`](DEPLOY.md)**.
 

@@ -8,7 +8,7 @@
     "dev:backend": "npm run dev --prefix backend",
     "build:frontend": "npm run build --prefix frontend",
     "start:backend": "npm start --prefix backend",
-    "install:all": "npm install --prefix frontend && npm install --prefix backend",
+    "install:all": "npm install --prefix frontend && npm install --prefix backend && npm install --prefix scripts",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down"
   }

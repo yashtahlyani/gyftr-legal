@@ -56,6 +56,16 @@ removed — the portal is AWS-only, and there is no data to bring across any
 more. `backend/schema.sql` is applied automatically when the API starts; it is
 idempotent, so restarting is always safe.
 
+`backend/seed.sql` runs right after it, also automatically, also idempotent —
+it's just the 4 real profiles (see §4 below), not agreement data. It's the
+thing that makes a brand-new RDS instance immediately loggable-into once
+Cognito accounts exist, with no manual SQL step.
+
+`backend/seed-demo.sql` is separate and **not** auto-applied: it's a handful
+of fake sample agreements for clicking around a fresh dev/staging database.
+Run it by hand only, and never against anything holding real agreements —
+see the warning at the top of the file for why.
+
 If you ever need the historical importer, it is in git history
 (`git log --diff-filter=D -- scripts/migrate-db.js`).
 
