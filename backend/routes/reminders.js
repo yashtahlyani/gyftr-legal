@@ -2,12 +2,12 @@
 // RLS was: "Add reminders" insert with check (authenticated); "Update reminders" update
 // using (authenticated) — no extra per-row check for either.
 //
-// NOTE: the live frontend today does NOT actually call this table — the
-// "nudge" feature in app-logic.js only writes to an in-memory object, so
-// reminders vanish on refresh (see docs/KT.md §6.5 item 5). This route is
-// ported for parity with the RLS grant and is wired up in the new
-// src/lib/api.js so nudges can be made to persist going forward — see
-// infra/HANDOVER.md "common changes" for how to flip that on.
+// The "nudge" feature in app-logic.js persists here (POST) and, since the
+// reminder-bar hydration fix, actually reads back from here too (GET) and
+// dismisses through here (PATCH .../dismiss) — see _loadReminders() and
+// dismissReminderBar() in frontend/src/ui/app-logic.js. Demo mode is the
+// one path that still never touches this table, by design (see writeup on
+// reminderLog in app-logic.js).
 
 import { Router } from 'express';
 import { query } from '../db.js';

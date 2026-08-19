@@ -11,6 +11,8 @@ import {
   uploadDraft,
   getDraftViewURL,
   sendReminder,
+  getMyReminders,
+  dismissReminder as apiDismissReminder,
   getUsers,
   advanceStage,
   reviseStage2Doc,
@@ -473,6 +475,24 @@ async function _loadFromApi(){
 let reminderLog={};   // {key: [{ts, count}]}
 let lastSeenRemarks={}; // {agId: count at last open}
 
+// Reminders sent via sendNudge() are persisted server-side (POST
+// /api/reminders), but the "pending reminders" bar used to read only from
+// reminderLog above — an in-memory, same-tab object. A reminder someone
+// actually sent never reached its recipient unless they happened to be in
+// the exact same browser session that sent it (see the note this used to
+// carry in backend/routes/reminders.js). This hydrates the bar from the
+// real backend on login — see _loadReminders(), called from main.js.
+let backendReminders=[];
+async function _loadReminders(){
+  try{
+    backendReminders=await getMyReminders();
+    checkReminderNotifications();
+    return {ok:true};
+  }catch(e){
+    return {ok:false,error:e?.message};
+  }
+}
+
 /* ══ PROMISE DATE HELPERS ══ */
 function promiseDaysLeft(pd){
   if(!pd)return null;
@@ -605,7 +625,10 @@ function checkReminderNotifications(){
   const myTeam=ROLES[role].team;
   if(role==="legal"){bar.classList.remove("show");return;}
 
-  // find all reminders that include my team
+  // find all reminders that include my team — same-tab echoes (reminderLog,
+  // still how demo mode works, since there's no backend to read from) plus
+  // whatever the real backend has on file for my team (backendReminders,
+  // already excludes anything my team dismissed — see _loadReminders()).
   const myReminders=[];
   Object.values(reminderLog).forEach(logs=>{
     logs.forEach(log=>{
@@ -613,6 +636,11 @@ function checkReminderNotifications(){
         myReminders.push(log);
       }
     });
+  });
+  backendReminders.forEach(r=>{
+    if(r.to_teams&&r.to_teams.includes(myTeam)&&!(r.dismissed_by||[]).includes(myTeam)){
+      myReminders.push({client:r.client_name,from:r.from_name,ts:(r.sent_at||"").replace("T"," ").slice(0,16)});
+    }
   });
 
   if(!myReminders.length){bar.classList.remove("show");return;}
@@ -634,6 +662,14 @@ function checkReminderNotifications(){
 
 function dismissReminderBar(){
   document.getElementById("reminderNotifBar").classList.remove("show");
+  const myTeam=ROLES[role].team;
+  const toDismiss=backendReminders.filter(r=>r.to_teams&&r.to_teams.includes(myTeam)&&!(r.dismissed_by||[]).includes(myTeam));
+  if(!toDismiss.length)return;
+  // Mark dismissed locally first so the bar can't reappear (e.g. from a
+  // stray re-render) before these calls land — worst case on a failed
+  // call is the reminder shows again next login, not lost data.
+  toDismiss.forEach(r=>{ if(!r.dismissed_by)r.dismissed_by=[]; r.dismissed_by.push(myTeam); });
+  toDismiss.forEach(r=>apiDismissReminder(r.id,myTeam).catch(()=>{}));
 }
 
 /* ════════ STATS ════════ */
@@ -2963,5 +2999,5 @@ Object.assign(window, {
   // Constants
   SC, TF, TCL, DOT_CLS, OC,
   // API loader — called by main.js after portal shows
-  _loadFromApi,
+  _loadFromApi, _loadReminders,
 })

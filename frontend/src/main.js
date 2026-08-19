@@ -136,6 +136,15 @@ import('./ui/app-logic.js').then(() => {
     })
   }
 
+  // Hydrates the reminder notification bar from the real backend — see the
+  // comment on _loadReminders() in app-logic.js for why this wasn't enough
+  // before (reminders only ever showed up in the same browser tab that
+  // sent them). Silently a no-op on failure: worst case the bar is just
+  // empty this load, same as it always was before this existed.
+  if (!demoRole && typeof window._loadReminders === 'function') {
+    window._loadReminders()
+  }
+
 }).catch(err => {
   console.error('Failed to load app-logic:', err)
 })
