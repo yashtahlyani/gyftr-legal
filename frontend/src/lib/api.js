@@ -75,8 +75,12 @@ export function getMyProfile() {
 }
 
 // The real directory — email/name/role/team_code/avatar for every profile.
-// Not yet wired into any dropdown/avatar list in the UI (those are still
-// the hardcoded ROLES map) — available for that migration when it's wanted.
+// Wired into the SPOC dropdowns on the Create Agreement modal
+// (app-logic.js's populateSpocDropdowns()). The topbar avatar and every
+// other single-person-per-role display still come from the hardcoded
+// ROLES map, not this — that's a separate, bigger migration (see
+// docs/reference/spoc-directory-pending-emails.md "What still needs a
+// manual step" and infra/HANDOVER.md "Common changes cookbook").
 export function getUsers() {
   return apiFetch('/api/users')
 }
@@ -174,9 +178,10 @@ export function updateClauseOutcome(clauseId, outcome) {
   })
 }
 
-// ── Drafts (backend surface exists for RLS parity; not yet wired into the
-// UI, same as before the migration — see infra/HANDOVER.md "common changes"
-// if you want to switch the Drafts modal from local-only to persisted) ────
+// ── Drafts — file upload variant, used by the "Attach file" control in the
+// Drafts modal (app-logic.js's addDraft()). Uploads to S3 via
+// backend/routes/drafts.js and returns the row including file_path/file_name
+// for the "View file" link (see getDraftViewURL below). ───────────────────
 export function uploadDraft(agreementId, file, draftNo, direction, note) {
   const formData = new FormData()
   formData.append('file', file)
@@ -207,7 +212,9 @@ export function updateDraftDirection(draftId, direction) {
   })
 }
 
-// ── Reminders (also not yet wired into the UI — see note above) ─────────
+// ── Reminders — sendNudge() posts here; app-logic.js's _loadReminders()
+// and dismissReminderBar() read/dismiss via the two functions below it,
+// hydrating the notification bar for real (non-demo) sessions on login. ──
 export function sendReminder(agreementId, fromRole, toTeams, clientName) {
   return apiFetch('/api/reminders', {
     method: 'POST',
