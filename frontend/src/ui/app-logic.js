@@ -8,6 +8,8 @@ import {
   addRemark as apiAddRemark,
   updateClauseOutcome as apiUpdateClauseOutcome,
   addDraftNote,
+  uploadDraft,
+  getDraftViewURL,
   sendReminder,
   getUsers,
   advanceStage,
@@ -1796,8 +1798,21 @@ async function updateClientStatus(id,v){
 let draftsAgId=null;
 function openDraftsModal(id){
   draftsAgId=id;
+  clearDraftFilePick();
   renderDraftsModal();
   document.getElementById("draftsModal").classList.add("show");
+}
+function clearDraftFilePick(){
+  const fileEl=document.getElementById("dpNewFile");
+  if(fileEl)fileEl.value="";
+  const nameEl=document.getElementById("dpNewFileName");
+  if(nameEl)nameEl.textContent="No file attached (optional)";
+}
+function onDraftFilePicked(){
+  const fileEl=document.getElementById("dpNewFile");
+  const nameEl=document.getElementById("dpNewFileName");
+  const f=fileEl.files&&fileEl.files[0];
+  if(nameEl)nameEl.textContent=f?`📄 ${f.name}`:"No file attached (optional)";
 }
 function renderDraftsModal(){
   const a=AGs.find(x=>x.id===draftsAgId);
@@ -1842,7 +1857,7 @@ function renderDraftsModal(){
           <span class="dp-date-txt">${fd(d.date)}</span>
           <span class="dp-dir-tag ${isSent?"dp-dir-sent":"dp-dir-recv"}">${isSent?"↗ Sent to client":"↙ Received from client"}</span>
         </div>
-        <div class="dp-note-txt">${d.note||"No note"}${d.docLink?` · <a href="${d.docLink}" target="_blank" rel="noopener" style="color:var(--pop-deep);font-weight:600">Open doc ↗</a>`:""}</div>
+        <div class="dp-note-txt">${d.note||"No note"}${d.docLink?` · <a href="${d.docLink}" target="_blank" rel="noopener" style="color:var(--pop-deep);font-weight:600">Open doc ↗</a>`:""}${d._blobUrl?` · <a href="${d._blobUrl}" target="_blank" rel="noopener" style="color:var(--pop-deep);font-weight:600">📄 ${d.fileName||"Attached file"} ↗</a>`:d.filePath?` · <a href="#" onclick="viewDraftFile(${Q(draftsAgId)},${i});return false" style="color:var(--pop-deep);font-weight:600">📄 ${d.fileName||"Attached file"} ↗</a>`:""}</div>
       </div>
     </div>`;
   }).join("");
@@ -1858,30 +1873,68 @@ async function addDraft(){
   const date=document.getElementById("dpNewDate").value;
   const note=document.getElementById("dpNewNote").value.trim();
   const dir=document.getElementById("dpNewDir").value;
+  const fileEl=document.getElementById("dpNewFile");
+  const file=fileEl&&fileEl.files&&fileEl.files[0]||null;
   if(!date||!note){showToast("Fill date and note");return;}
   if(!a.drafts)a.drafts=[];
   const draftNo="D"+(a.drafts.length+1);
-  const entry={n:draftNo,date,dir,note};
+  // A file upload is always stamped with today's date server-side
+  // (backend/routes/drafts.js has no field for a caller-supplied date on
+  // that path) — reflect that locally too so the entry never shows a date
+  // the backend didn't actually record.
+  const entry=file?{n:draftNo,date:td(),dir,note,fileName:file.name,_blobUrl:URL.createObjectURL(file)}:{n:draftNo,date,dir,note};
 
   a.drafts.push(entry);
   document.getElementById("dpNewDate").value="";
   document.getElementById("dpNewNote").value="";
+  clearDraftFilePick();
   renderDraftsModal();
   ftbl();
 
-  if(!a._sbId){showToast("Draft added","green");return;}
+  if(!a._sbId){
+    showToast(file?"Draft with file added":"Draft added","green");
+    return;
+  }
 
   try{
-    const saved=await addDraftNote(a._sbId,draftNo,dir,note,date);
-    entry._id=saved.id;
-    showToast("Draft added","green");
+    if(file){
+      const saved=await uploadDraft(a._sbId,file,draftNo,dir,note);
+      entry._id=saved.id;
+      entry.filePath=saved.file_path;
+      entry.fileName=saved.file_name;
+      entry.date=(saved.date||entry.date);
+    }else{
+      const saved=await addDraftNote(a._sbId,draftNo,dir,note,date);
+      entry._id=saved.id;
+    }
+    renderDraftsModal();
+    showToast(file?"Draft with file uploaded":"Draft added","green");
   }catch(e){
     const idx=a.drafts.indexOf(entry);
     if(idx>=0)a.drafts.splice(idx,1);
     renderDraftsModal();
     ftbl();
-    enqueueWrite('draftNote',[a._sbId,draftNo,dir,note,date],`${a.client} — draft ${draftNo}`);
-    showToast("Couldn't save — will retry automatically","red");
+    if(file){
+      // Re-uploading a File object from a retry queue after a page reload
+      // isn't possible (the browser doesn't persist File handles) — a
+      // failed file upload has to be retried by hand, unlike every other
+      // queued write here.
+      showToast("Couldn't upload the file — please try attaching it again","red");
+    }else{
+      enqueueWrite('draftNote',[a._sbId,draftNo,dir,note,date],`${a.client} — draft ${draftNo}`);
+      showToast("Couldn't save — will retry automatically","red");
+    }
+  }
+}
+async function viewDraftFile(agId,idx){
+  const a=AGs.find(x=>x.id===agId);
+  const d=a&&a.drafts&&a.drafts[idx];
+  if(!d||!d._id)return;
+  try{
+    const url=await getDraftViewURL(d._id);
+    window.open(url,"_blank","noopener");
+  }catch(e){
+    showToast("Couldn't open file: "+e.message,"red");
   }
 }
 function closeDraftsModal(){document.getElementById("draftsModal").classList.remove("show");draftsAgId=null;}
@@ -2886,6 +2939,7 @@ Object.assign(window, {
   openRem, closeRem, submitRem, filterRem, renderRemList, renderRemFiltered,
   // Drafts modal
   openDraftsModal, closeDraftsModal, renderDraftsModal, toggleDraftDir, addDraft,
+  onDraftFilePicked, viewDraftFile,
   // Doc screen
   openDoc, closeDoc,
   // Client detail screen

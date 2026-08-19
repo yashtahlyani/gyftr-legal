@@ -581,6 +581,13 @@
         </div>
         <button class="gx-btn gx-btn-dark" style="flex-shrink:0;padding:8px 16px" onclick="addDraft()">Add</button>
       </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <label class="gx-btn gx-btn-soft" style="padding:6px 12px;font-size:12px;cursor:pointer;flex-shrink:0">
+          📎 Attach file
+          <input type="file" id="dpNewFile" style="display:none" onchange="onDraftFilePicked()">
+        </label>
+        <span id="dpNewFileName" style="font-size:12px;color:var(--ink-soft)">No file attached (optional)</span>
+      </div>
     </div>
   </div>
 </div>
