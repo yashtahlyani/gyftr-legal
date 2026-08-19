@@ -49,13 +49,33 @@ create table if not exists agreements (
   doc_link         text,
   client_dates     jsonb default '{}',
   created_by       uuid references profiles(id),
+  -- Stage engine (Legal Panel Tool spec v4). `created_by` above doubles as
+  -- "the original uploader" the spec refers to throughout — only that
+  -- person may trigger a stage transition. Stage is deliberately separate
+  -- from `status` above — no auto-mirroring between the two, by spec.
+  stage            text not null default 'review_pending'
+    check (stage in ('review_pending','final_approval_pending','signing_required','signing_done')),
+  -- The doc uploaded at the 1->2 transition (and any same-stage revision
+  -- within Stage 2) — distinct from doc_link, which stays the original
+  -- Stage-1 doc. Every version (initial + revisions) is also logged as a
+  -- `drafts` row below, for the full history.
+  stage2_doc_link  text,
   created_at       timestamptz default now(),
   updated_at       timestamptz default now()
 );
 
+-- Idempotent add for a database where `agreements` already existed before
+-- the stage engine — CREATE TABLE IF NOT EXISTS above is a no-op there.
+alter table agreements add column if not exists stage text not null default 'review_pending'
+  check (stage in ('review_pending','final_approval_pending','signing_required','signing_done'));
+alter table agreements add column if not exists stage2_doc_link text;
+
 -- ── DRAFTS ──────────────────────────────────────────────────
 -- file_path is now an S3 object key (was a Supabase Storage path) —
 -- same string shape (`${agreementId}/${draftNo}${ext}`), different bucket.
+-- doc_link (added for the stage engine) holds a Google Doc URL instead,
+-- for the Stage-2 document + any revisions — a "draft" row is now either
+-- an S3 file OR an external doc link, never expected to be both.
 create table if not exists drafts (
   id            uuid default gen_random_uuid() primary key,
   agreement_id  uuid references agreements(id) on delete cascade,
@@ -64,10 +84,12 @@ create table if not exists drafts (
   note          text,
   file_path     text,
   file_name     text,
+  doc_link      text,
   date          date default current_date,
   created_by    uuid references profiles(id),
   created_at    timestamptz default now()
 );
+alter table drafts add column if not exists doc_link text;
 
 -- ── TEAM STATUSES ───────────────────────────────────────────
 create table if not exists team_statuses (

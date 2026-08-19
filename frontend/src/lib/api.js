@@ -129,10 +129,32 @@ export function updateClientDates(id, clientDates) {
 }
 
 // ── Team status ─────────────────────────────────────────────────────────
-export function updateTeamStatus(agreementId, teamCode, status, fromStatus, teamName) {
+// remarkText is required by the backend when status === 'Rejected' ("Reject
+// with Remarks", Stage 2 only) — inserted atomically with the status change.
+export function updateTeamStatus(agreementId, teamCode, status, fromStatus, teamName, remarkText) {
   return apiFetch(`/api/agreements/${agreementId}/team-status`, {
     method: 'PATCH',
-    body: JSON.stringify({ teamCode, status, fromStatus, teamName }),
+    body: JSON.stringify({ teamCode, status, fromStatus, teamName, remarkText }),
+  })
+}
+
+// ── Stage engine ──────────────────────────────────────────────────────────
+// Advances review_pending -> final_approval_pending (needs docLink) ->
+// signing_required -> signing_done. Only the original uploader may call
+// this — the backend checks agreements.created_by, not just role.
+export function advanceStage(agreementId, docLink) {
+  return apiFetch(`/api/agreements/${agreementId}/stage/advance`, {
+    method: 'PATCH',
+    body: JSON.stringify({ docLink }),
+  })
+}
+
+// Stage-2-only same-stage document correction — does not change stage,
+// resets all 4 My statuses to Pending. Both docLink and reason are required.
+export function reviseStage2Doc(agreementId, docLink, reason) {
+  return apiFetch(`/api/agreements/${agreementId}/stage/revise-doc`, {
+    method: 'POST',
+    body: JSON.stringify({ docLink, reason }),
   })
 }
 
@@ -241,7 +263,8 @@ function mapToPortalFormat(a) {
   })
 
   const drafts = (a.drafts || []).map(d => ({
-    n: d.draft_no, date: d.date, dir: d.direction, note: d.note || '', filePath: d.file_path, _id: d.id,
+    n: d.draft_no, date: d.date, dir: d.direction, note: d.note || '',
+    filePath: d.file_path, docLink: d.doc_link || '', _id: d.id,
   }))
 
   const clauses = (a.clauses || []).map(c => ({
@@ -257,6 +280,8 @@ function mapToPortalFormat(a) {
     tag: a.tag || a.client.slice(0, 4).toUpperCase(),
     ct: colorFromType(a.type),
     sD: a.start_date, type: a.type, st: a.status, clientStatus: a.client_status,
+    stage: a.stage || 'review_pending', stage2DocLink: a.stage2_doc_link || '',
+    createdBy: a.created_by || null,
     pd: a.promise_date || '',
     tm, ms, teamAging,
     lu: (a.updated_at || a.created_at || '').split('T')[0],

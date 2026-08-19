@@ -10,6 +10,8 @@ import {
   addDraftNote,
   sendReminder,
   getUsers,
+  advanceStage,
+  reviseStage2Doc,
 } from '../lib/api.js'
 import { signIn as cognitoSignIn, signOut as cognitoSignOut } from '../lib/auth-cognito.js'
 import { enqueueWrite, flushWriteQueue, getQueuedCount } from '../lib/writeQueue.js'
@@ -637,7 +639,6 @@ function render(data){
   tb.innerHTML="";
   data.forEach(a=>{
     const sm=SC[a.st];
-    const myS=a.ms[mt]||"Pending";
     const lastRem=a.remarks&&a.remarks.length?a.remarks[a.remarks.length-1]:null;
     const remCount=a.remarks?a.remarks.length:0;
 
@@ -679,6 +680,7 @@ function render(data){
           </div>
         </div>
       </td>
+      <td class="gx-td">${renderStageCell(a)}</td>
       <td class="gx-td"><span style="font-size:12px;color:var(--ink-soft)">${(a.sp&&a.sp.L)||"—"}</span></td>
       <td class="gx-td">${renderClientStatusBadge(a.clientStatus||"awaiting",a.id)}</td>
       <td class="gx-td">
@@ -693,13 +695,7 @@ function render(data){
           : `<span class="badge ${sm.c}"><span class="bdot"></span>${sm.l}</span>`
         }
       </td>
-      <td class="gx-td">
-        <select class="mss" onchange="ums(${Q(a.id)},this.value)">
-          <option ${myS==="Pending"?"selected":""}>Pending</option>
-          <option ${myS==="Under Review"?"selected":""}>Under Review</option>
-          <option ${myS==="Approved"?"selected":""}>Approved</option>
-        </select>
-      </td>
+      <td class="gx-td">${renderMyStatusCell(a,mt)}</td>
       <td class="gx-td" style="min-width:160px">
         <div class="tr-col" id="trcol-${a.id}">${trRows}</div>
       </td>
@@ -796,6 +792,141 @@ document.getElementById("fTeamSt").addEventListener("change",()=>{
   document.getElementById("teamFilterBtn").classList.toggle("on",anyOff);
 });
 
+
+/* ════════ STAGE ENGINE (Legal Panel Tool spec v4) ════════
+   Stage is separate from `st` (Status) — no auto-mirroring, by spec.
+   review_pending -> final_approval_pending -> signing_required -> signing_done. */
+const STAGE_CFG={
+  review_pending:         {l:"Review Pending",         bg:"#F3F4F6", fg:"#4B5563", dot:"#9CA3AF"},
+  final_approval_pending: {l:"Final Approval Pending",  bg:"#FFF8E1", fg:"#92400E", dot:"#D97706"},
+  signing_required:       {l:"Signing Required",        bg:"#EFF6FF", fg:"#1D4ED8", dot:"#2D7FF9"},
+  signing_done:           {l:"Signing Done",             bg:"#F0FDF4", fg:"#15803D", dot:"#15803D"},
+};
+function renderStageCell(a){
+  const cfg=STAGE_CFG[a.stage]||STAGE_CFG.review_pending;
+  const badge=`<span class="cs-badge" style="background:${cfg.bg};color:${cfg.fg}"><span style="width:5px;height:5px;border-radius:50%;background:${cfg.dot};display:inline-block"></span>${cfg.l}</span>`;
+  // Only the original uploader ever sees a transition action here — per
+  // spec, no one else can trigger these, even Legal team members who
+  // aren't the uploader. Everyone else, including Legal, sees the badge only.
+  const isUploader=myProfile&&a.createdBy&&myProfile.id===a.createdBy;
+  if(!isUploader)return badge;
+
+  const allApproved=["L","F","C","B"].every(t=>a.ms[t]==="Approved");
+  let cta="";
+  if(a.stage==="review_pending"&&allApproved){
+    cta=`<button class="gx-btn gx-btn-soft" style="margin-top:4px;padding:3px 8px;font-size:10.5px" onclick="advanceStageAction(${Q(a.id)})">Confirm final approval</button>`;
+  }else if(a.stage==="final_approval_pending"){
+    if(allApproved)cta+=`<button class="gx-btn gx-btn-soft" style="margin-top:4px;padding:3px 8px;font-size:10.5px" onclick="advanceStageAction(${Q(a.id)})">Confirm sign-in stage</button>`;
+    cta+=`<button class="gx-btn gx-btn-ghost" style="margin-top:4px;margin-left:${allApproved?"4px":"0"};padding:3px 8px;font-size:10.5px" onclick="reviseStage2DocAction(${Q(a.id)})">Revise draft</button>`;
+  }else if(a.stage==="signing_required"&&a.ms.L==="Approved"){
+    cta=`<button class="gx-btn gx-btn-soft" style="margin-top:4px;padding:3px 8px;font-size:10.5px" onclick="advanceStageAction(${Q(a.id)})">Mark signed / close</button>`;
+  }
+  return cta?`<div>${badge}<div>${cta}</div></div>`:badge;
+}
+
+// Reloads from the server after a stage transition so every stage-derived
+// field (My status resets, the new stage, drafts/history) reflects what the
+// backend actually committed, rather than hand-reconstructing it client-side.
+async function refreshAfterStageChange(){
+  const result=await _loadFromApi();
+  updateStats();ftbl();
+  return result;
+}
+
+async function advanceStageAction(id){
+  const a=AGs.find(x=>x.id===id);
+  if(!a||!a._sbId)return;
+  try{
+    if(a.stage==="review_pending"){
+      if(!confirm("Are you sure you want to move the document to final approval stage?"))return;
+      const docLink=prompt("Paste the Google Doc link for the final approval draft (this is a new, separate document from the original):");
+      if(!docLink||!docLink.trim()){showToast("A document link is required — not advanced");return;}
+      await advanceStage(a._sbId,docLink.trim());
+      showToast("Moved to Final Approval Pending","green");
+    }else if(a.stage==="final_approval_pending"){
+      if(!confirm("Are you sure you want to move the document to sign-in stage?"))return;
+      await advanceStage(a._sbId);
+      showToast("Moved to Signing Required","green");
+    }else if(a.stage==="signing_required"){
+      if(!confirm("Confirm the agreement has been signed — this closes the task."))return;
+      await advanceStage(a._sbId);
+      showToast("Agreement closed — Signing Done","green");
+    }else{
+      return;
+    }
+    await refreshAfterStageChange();
+  }catch(e){
+    showToast(e.message||"Couldn't advance the stage","red");
+  }
+}
+
+async function reviseStage2DocAction(id){
+  const a=AGs.find(x=>x.id===id);
+  if(!a||!a._sbId)return;
+  const docLink=prompt("Paste the corrected Google Doc link:");
+  if(!docLink||!docLink.trim())return;
+  const reason=prompt("Reason for this revision (required):");
+  if(!reason||!reason.trim()){showToast("A reason is required — not uploaded");return;}
+  try{
+    await reviseStage2Doc(a._sbId,docLink.trim(),reason.trim());
+    showToast("Revised draft uploaded — all 4 teams reset to Pending","green");
+    await refreshAfterStageChange();
+  }catch(e){
+    showToast(e.message||"Couldn't upload the revised draft","red");
+  }
+}
+
+// Stage 2's My-status dropdown has a 4th value ("Reject with Remarks") not
+// available at Stage 1/3 — everything else routes through the normal ums().
+async function umsStage2(id,v){
+  if(v!=="Reject with Remarks")return ums(id,v);
+
+  const a=AGs.find(x=>x.id===id);
+  const mt=ROLES[role].team;
+  const prevTm=a.tm[mt]||"tc-none";
+  const prev=TC_TO_MS[prevTm]||"Pending";
+  const remark=prompt("Remark explaining the rejection (required):");
+  if(!remark||!remark.trim()){showToast("A remark is required to reject");ftbl();return;}
+
+  a.ms[mt]="Rejected";
+  a.tm[mt]="tc-red";
+  a.hist.push({d:ns(),t:TF[mt],b:myName(),f:prev,to:"Rejected"});
+  if(!a.remarks)a.remarks=[];
+  const remarkEntry={author:myName(),role:ROLES[role].role.replace(" Team",""),ts:ns(),txt:remark.trim()};
+  a.remarks.push(remarkEntry);
+  ftbl();
+
+  if(!a._sbId){showToast(TF[mt]+" → Rejected (with remarks)","green");return;}
+
+  try{
+    await apiUpdateTeamStatus(a._sbId,mt,"Rejected",prev,TF[mt],remark.trim());
+    showToast(TF[mt]+" → Rejected (with remarks)","green");
+  }catch(e){
+    a.ms[mt]=prev;a.tm[mt]=prevTm;a.hist.pop();
+    const idx=a.remarks.indexOf(remarkEntry);if(idx>=0)a.remarks.splice(idx,1);
+    ftbl();
+    enqueueWrite('teamStatus',[a._sbId,mt,"Rejected",prev,TF[mt],remark.trim()],`${a.client} — ${TF[mt]} rejected with remarks`);
+    showToast("Couldn't save — will retry automatically","red");
+  }
+}
+
+function renderMyStatusCell(a,mt){
+  if(a.stage==="signing_required"&&mt!=="L"){
+    return `<span style="font-size:11px;color:var(--ink-soft)">View only</span>`;
+  }
+  const myS=a.ms[mt]||"Pending";
+  if(a.stage==="final_approval_pending"){
+    const displayVal = myS==="Rejected" ? "Reject with Remarks" : myS;
+    const opts=["Pending","Under Review","Approved","Reject with Remarks"]
+      .map(v=>`<option ${displayVal===v?"selected":""}>${v}</option>`).join("");
+    return `<select class="mss" onchange="umsStage2(${Q(a.id)},this.value)">${opts}</select>`;
+  }
+  return `<select class="mss" onchange="ums(${Q(a.id)},this.value)">
+      <option ${myS==="Pending"?"selected":""}>Pending</option>
+      <option ${myS==="Under Review"?"selected":""}>Under Review</option>
+      <option ${myS==="Approved"?"selected":""}>Approved</option>
+    </select>`;
+}
 
 /* My Status dropdown → syncs to Team Review + logs history */
 const MS_TO_TC={"Pending":"tc-none","Under Review":"tc-yellow","Approved":"tc-green","Rejected":"tc-red"};
@@ -1147,8 +1278,14 @@ function openDoc(id){
   const urlEl=document.getElementById("docFrameUrl");
   const linkEl=document.getElementById("docOpenLink");
 
+  // Which document is "active" follows the stage engine — Stage 1 uses the
+  // original upload (a.doc); Stage 2/3 use the doc uploaded at the 1->2
+  // transition (a.stage2DocLink), per spec ("Document: the new doc
+  // uploaded during the Stage 1->2 transition" / "same doc carried over
+  // from Stage 2"). Falls back to a.doc if a Stage-2 doc somehow isn't set.
+  const stageDoc=(a.stage&&a.stage!=="review_pending")?(a.stage2DocLink||a.doc||""):(a.doc||"");
   // Check for a real Google Doc (linked via picker or a.doc with valid 10+ char ID)
-  const docUrl=a._linkedDocUrl||a.doc||"";
+  const docUrl=a._linkedDocUrl||stageDoc||"";
   const linkedDocId=a._linkedDocId||(docUrl.match(/\/d\/([a-zA-Z0-9_-]{10,})/)||[])[1];
 
   if(linkEl){
@@ -1354,6 +1491,7 @@ async function submitCr(){
   const build=(sbId)=>({
     id:sbId||(AGs.length+1),_sbId:sbId,client:c,tag:c.slice(0,4).toUpperCase(),ct:"ct-q",sD:td(),type:t,st:"pending",
     clientStatus:"awaiting",
+    stage:"review_pending",stage2DocLink:"",createdBy:sbId?(myProfile?.id||null):null,
     tm:{L:"tc-none",F:"tc-none",C:"tc-none",B:"tc-none"},
     ms:{L:"Pending",F:"Pending",C:"Pending",B:"Pending"},
     teamAging:{L:null,F:null,C:null,B:null},
@@ -2668,6 +2806,8 @@ Object.assign(window, {
   toggleTeamDD, toggleTeamOpt,
   // Status
   ums, updateAgreementStatus, updateClientStatus, updateLU,
+  // Stage engine
+  umsStage2, advanceStageAction, reviseStage2DocAction,
   // Client status
   renderClientStatusBadge, CS_CFG,
   // Create agreement

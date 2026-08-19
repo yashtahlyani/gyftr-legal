@@ -79,3 +79,12 @@ export function requireDraftUploadPermission(req, res, next) {
   }
   next();
 }
+
+// Stage engine (Legal Panel Tool spec v4) — every stage-transition action is
+// restricted to "the specific person who uploaded the agreement at task
+// creation," not just anyone with role='legal'. `agreements.created_by`
+// doubles as that reference. No delegate/fallback if that person is
+// unavailable — explicitly out of scope per the spec.
+export function isOriginalUploader(profile, agreement) {
+  return agreement.created_by === profile.id;
+}

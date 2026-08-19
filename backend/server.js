@@ -19,6 +19,7 @@ import remindersRoutes    from './routes/reminders.js';
 import profileRoutes      from './routes/profile.js';
 import aiAnalyzeRoutes    from './routes/ai-analyze.js';
 import signDocumentRoutes from './routes/sign-document.js';
+import stageRoutes        from './routes/stage.js';
 
 const app  = express();
 const PORT = process.env.PORT || 7978;
@@ -108,6 +109,7 @@ app.use('/api', clausesRoutes);
 app.use('/api', remindersRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', signDocumentRoutes);
+app.use('/api', stageRoutes);
 
 // ── Start ──────────────────────────────────────────────────────────────────
 // Listen FIRST, connect second. If the database is unreachable the API still
