@@ -68,9 +68,16 @@ holding DB credentials, and a second private **S3** bucket for draft files.
    VITE_COGNITO_CLIENT_ID=...
    ```
    and the same two (plus `COGNITO_REGION=ap-south-1`) in `backend/.env`.
-9. **Create the 4 real users**: run `scripts/create-cognito-users.js` (see §8) —
-   it creates one Cognito account per `profiles` row and links it back via
-   `cognito_sub`, rather than creating them by hand in the console.
+9. **Create the real users**: run `scripts/create-cognito-users.js` (see §8) —
+   it creates one Cognito account per `profiles` row (now ~26 real people,
+   see `backend/seed.sql`) and links it back via `cognito_sub`, rather than
+   creating them by hand in the console.
+10. **Optional: "Continue with Google"** — a Cognito Hosted UI + Google
+    federation login path exists on top of the above (no separate user pool,
+    same one). It needs its own Google Cloud OAuth client and a couple of
+    extra Cognito console steps this section doesn't cover — see
+    `docs/GOOGLE-SSO-RUNBOOK.md` for the full walkthrough. Skip it entirely
+    if native email/password login (steps 1–9) is all that's needed for now.
 
 ---
 
@@ -246,6 +253,7 @@ aws cloudfront create-invalidation --distribution-id <CF_ID> --paths "/*"
 | `VITE_API_URL` | Frontend `.env.local` | `https://api.legal.your-domain.example` |
 | `VITE_COGNITO_USER_POOL_ID` | Frontend `.env.local` | From Cognito console |
 | `VITE_COGNITO_CLIENT_ID` | Frontend `.env.local` | From Cognito console |
+| `VITE_COGNITO_DOMAIN` | Frontend `.env.local` | Optional — only for "Continue with Google" (see `docs/GOOGLE-SSO-RUNBOOK.md`). Leave unset and that button just stays hidden. |
 | `VITE_OPENAI_API_KEY` | Frontend `.env.local` | Optional client-supplied fallback (see `backend/.env` `OPENAI_API_KEY` instead) |
 | `VITE_GOOGLE_*` | Frontend `.env.local` | Unrelated to this migration — same Google Drive/Docs/Picker keys as before |
 | `PORT` | Backend `.env` | `7978` |

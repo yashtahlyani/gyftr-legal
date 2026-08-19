@@ -35,6 +35,7 @@ phases:
           --build-arg VITE_API_URL=$VITE_API_URL \
           --build-arg VITE_COGNITO_USER_POOL_ID=$VITE_COGNITO_USER_POOL_ID \
           --build-arg VITE_COGNITO_CLIENT_ID=$VITE_COGNITO_CLIENT_ID \
+          --build-arg VITE_COGNITO_DOMAIN=$VITE_COGNITO_DOMAIN \
           --build-arg VITE_OPENAI_API_KEY=$VITE_OPENAI_API_KEY \
           --build-arg VITE_GOOGLE_DOCS_API_KEY=$VITE_GOOGLE_DOCS_API_KEY \
           --build-arg VITE_GOOGLE_DRIVE_API_KEY=$VITE_GOOGLE_DRIVE_API_KEY \

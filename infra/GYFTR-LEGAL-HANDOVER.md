@@ -753,6 +753,9 @@ Inside the root `gyftr-legal` directory, create `.env.local`:
 VITE_API_URL=https://api.legal.gyftr.net
 VITE_COGNITO_USER_POOL_ID=YOUR_COGNITO_USER_POOL_ID
 VITE_COGNITO_CLIENT_ID=YOUR_COGNITO_CLIENT_ID
+# Optional — only needed for the "Continue with Google" button. Leave unset
+# to keep that button hidden; see docs/GOOGLE-SSO-RUNBOOK.md before setting it.
+# VITE_COGNITO_DOMAIN=YOUR_COGNITO_HOSTED_UI_DOMAIN
 VITE_OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 VITE_GOOGLE_DOCS_API_KEY=YOUR_GOOGLE_DOCS_API_KEY
 VITE_GOOGLE_DRIVE_API_KEY=YOUR_GOOGLE_DRIVE_API_KEY
