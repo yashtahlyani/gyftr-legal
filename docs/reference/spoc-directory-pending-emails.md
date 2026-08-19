@@ -1,74 +1,35 @@
-# SPOC Directory — pending email addresses
+# SPOC Directory — resolved
 
-Source: `Enhancements Legal Panel V2.pdf`, "Functional Spec v4," Section 8
-(`Spocs.xlsx`, as shared). Captured here so this list survives until the
-missing emails land — **do not seed this into `profiles` with fabricated
-emails**; `profiles.email` is the login identity (matched against real
-Google/Cognito accounts), and a wrong or placeholder email here would
-either block that person's real login or silently attach their agreements
-to the wrong account later.
+Real emails arrived (`Spocs_Updated.xlsx`, shared 2026-08-20) and are now
+seeded directly in `backend/seed.sql` — see the "Real SPOC directory" block
+there for the authoritative, current list. This file is kept only for the
+two decisions made when seeding it, since neither is derivable from the
+sheet alone:
 
-Once Siddharth provides real email addresses, insert them into `profiles`
-(see `backend/seed.sql` for the pattern) — `role` maps Legal→`legal`,
-Finance→`finance`, Compliance→`compliance`, Business→`business`;
-`team_code` maps to `L`/`F`/`C`/`B` respectively.
+- **"Nitin Kumar"** appears once, under **Legal only**. The sheet also
+  listed him under Compliance with the same email — confirmed (2026-08-20)
+  that this was wrong; he is not on the Compliance team. Do not add a
+  Compliance row for him.
+- **Bhuwaneshwar** (Legal) has no email in the sheet yet. Left out of
+  `profiles` entirely — do not guess one. Add him to `backend/seed.sql`
+  the same way as everyone else once a real address is provided.
 
-## Legal (`role='legal'`, `team_code='L'`)
-| Name | Email |
-|---|---|
-| Neha Goswami | *pending* |
-| Nitin | *pending — see note below* |
-| Bhuwaneshwar | *pending* |
-| Kushagra | *pending* |
+The earlier version of this file assumed "Nitin" (Legal) and "Nitin Kumar"
+(Compliance) were two different people, based on an older, less complete
+copy of the spreadsheet. That assumption was wrong and has been dropped —
+go by `Spocs_Updated.xlsx` / `backend/seed.sql`, not by anything below.
 
-## Finance (`role='finance'`, `team_code='F'`)
-| Name | Email |
-|---|---|
-| Pankaj Sharma | *pending* |
-| Nikunj Kanodia | *pending* |
-| Ankit | *pending* |
-| Purnima | *pending* |
+## What still needs a manual step
 
-## Compliance (`role='compliance'`, `team_code='C'`)
-| Name | Email |
-|---|---|
-| Pankaj Mittal | *pending* |
-| Nitin Kumar | *pending — see note below* |
-| Himanshu Khanna | *pending* |
+Seeding `profiles` is enough for:
+- SPOC dropdowns (already pulled from `GET /api/users` — see
+  `frontend/src/ui/app-logic.js` around `getUsers()`).
+- Google SSO login (`docs/GOOGLE-SSO-RUNBOOK.md`) — `backend/middleware/loadProfile.js`
+  auto-links a Google sign-in to its matching `profiles` row by verified
+  email on first login, no extra step needed.
 
-## Business (`role='business'`, `team_code='B'`)
-| Name | Email |
-|---|---|
-| Anjali Gupta | *pending* |
-| Khusboo Nagpal | *pending* |
-| Sandeep Kumar | *pending* |
-| Rajiv Jadon | *pending* |
-| Kavish | *pending* |
-| Gautam Mehra | *pending* |
-| Anjali Jain | *pending* |
-| Neha Sharma | *pending* |
-| Yashoda | *pending* |
-| Rajiv Magan | *pending* |
-| Himanshu Karamchandani | *pending* |
-| Shradhha Pratap Singh | *pending* |
-| Pratishta | *pending* |
-
-## Note on the two "Nitin"s
-
-The source spreadsheet listed "Nitin Kumar" under both Legal and
-Compliance. The spec confirms these are two different people: **"Nitin"**
-(Legal) and **"Nitin Kumar"** (Compliance) — kept as two distinct rows
-above. Don't collapse them into one profile.
-
-## What replaces the current 4-profile seed
-
-`backend/seed.sql` currently seeds exactly 4 people (one per team —
-Nitin/Neha/Pankaj Mehta/Nikhil), matching the tool's original 4-person
-model. This spec's directory has ~28 people across the same 4 teams — a
-real multi-person roster. Once emails are available, `seed.sql` (or a
-follow-up seed file) needs to grow from "one person per team" to "N people
-per team," and every place in the frontend that currently assumes exactly
-one SPOC per team (the SPOC dropdowns fixed earlier this project, the
-`ROLES[role]` single-person-per-role model in `app-logic.js`) needs the
-same `GET /api/users`-backed treatment already used for the SPOC dropdowns
-— see `infra/HANDOVER.md` "Common changes cookbook."
+It is **not** enough on its own for native Cognito email/password login —
+that still requires running `scripts/create-cognito-users.js` (see
+`infra/aws-setup.md` §3/§8) to actually create each person's Cognito
+account. If Google SSO goes live per the runbook, that script becomes
+optional for anyone who only ever signs in via Google.

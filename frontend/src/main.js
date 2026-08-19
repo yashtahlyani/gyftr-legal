@@ -1,6 +1,7 @@
 // ── GyfTR Legal Portal — Main Entry Point ────────────────────────────────────
 
 import { restoreSession } from './lib/auth-cognito.js'
+import { restoreGoogleSession } from './lib/auth-google-sso.js'
 import { ROLES, AGs } from './data/sample.js'
 import {
   fd, ns, td, parseTs, diffLabel,
@@ -26,6 +27,10 @@ if (!demoRole) {
   // Restore the Cognito session (this also sets the auth token every
   // src/lib/api.js call sends as a Bearer header) and fetch the linked profile.
   profile = await restoreSession()
+  // Falls back to a Google-SSO session (see auth-google-sso.js) — the two
+  // login paths are otherwise independent, so restoring one is tried only
+  // once the other has confirmed there's nothing to restore.
+  if (!profile) profile = await restoreGoogleSession()
   if (!profile) {
     window.location.href = '/index.html'
     throw new Error('Not authenticated')

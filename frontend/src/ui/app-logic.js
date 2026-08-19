@@ -14,6 +14,7 @@ import {
   reviseStage2Doc,
 } from '../lib/api.js'
 import { signIn as cognitoSignIn, signOut as cognitoSignOut } from '../lib/auth-cognito.js'
+import { googleSignOut } from '../lib/auth-google-sso.js'
 import { enqueueWrite, flushWriteQueue, getQueuedCount } from '../lib/writeQueue.js'
 
 // Safe ID quoting for onclick attrs: integers pass as-is, UUID strings get single-quoted
@@ -592,6 +593,7 @@ function doSignout(){
   sessionStorage.removeItem('demo_role');
   sessionStorage.removeItem('profile');
   cognitoSignOut();
+  googleSignOut();
   window.location.href='/index.html';
 }
 

@@ -25,7 +25,14 @@ export async function requireAuth(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Missing token' });
   try {
     const payload = await verifier.verify(token);
-    req.user = { sub: payload.sub, email: payload.email };
+    req.user = {
+      sub: payload.sub,
+      email: payload.email,
+      // Google-federated tokens carry this as a real boolean; be liberal
+      // about the shape since it's the gate loadProfile.js uses before
+      // trusting `email` enough to auto-link an account to it.
+      email_verified: payload.email_verified === true || payload.email_verified === 'true',
+    };
     next();
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' });

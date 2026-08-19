@@ -1,4 +1,5 @@
 import { signIn, completeNewPasswordChallenge, AUTH_CONFIG_ERROR } from './lib/auth-cognito.js'
+import { redirectToGoogleSignIn, completeGoogleSignInFromUrl, googleSignInAvailable } from './lib/auth-google-sso.js'
 
 const DEMO_EMAILS = {
   legal:      'nitin@gyftr.net',
@@ -12,6 +13,23 @@ const ROLE_LABELS = {
   finance:    'Finance Team',
   business:   'Business Team',
   compliance: 'Compliance Team'
+}
+
+window.handleGoogleSignIn = function () {
+  redirectToGoogleSignIn().catch(err => showError(err.message))
+}
+
+// If this page load is the redirect back from Google/Cognito (?code=...),
+// finish it before anything else — otherwise the user briefly sees an empty
+// login form instead of being sent straight into the portal.
+try {
+  const googleProfile = await completeGoogleSignInFromUrl()
+  if (googleProfile) {
+    sessionStorage.setItem('profile', JSON.stringify(googleProfile))
+    window.location.href = '/app.html'
+  }
+} catch (err) {
+  showError(err.message || 'Google sign-in failed. Please try again.')
 }
 
 let selectedRole = 'legal'
@@ -240,6 +258,9 @@ window.handleSetNewPassword = async function (ev) {
   // which meant every real user landed on someone else's credentials.
   const demoBlock = document.getElementById('demoBlock')
   if (DEMO_MODE_ALLOWED && demoBlock) demoBlock.style.display = ''
+
+  const googleBtn = document.getElementById('googleSignInBtn')
+  if (googleBtn) googleBtn.style.display = googleSignInAvailable() ? 'flex' : 'none'
 
   // Explain a redirect that came from app.html rather than leaving the user
   // guessing why they were signed out.
