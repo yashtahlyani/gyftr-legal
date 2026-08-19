@@ -95,7 +95,7 @@ tr:hover .gx-td{background:#F4F8F4}
 .team-filter-btn{font-family:var(--font-b);font-size:12.5px;color:var(--ink-soft);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:7px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .12s}
 .team-filter-btn:hover{background:#E6EFE7;color:var(--ink)}
 .team-filter-btn.on{border-color:var(--pop);background:var(--pop-soft);color:var(--pop-deep)}
-.team-dd{position:absolute;top:calc(100%+6px);left:0;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:10px;min-width:200px;box-shadow:0 16px 48px -12px rgba(0,0,0,.22);z-index:50;animation:fadeup .18s cubic-bezier(.2,.7,.2,1) both}
+.team-dd{position:absolute;top:calc(100% + 6px);left:0;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:10px;min-width:200px;box-shadow:0 16px 48px -12px rgba(0,0,0,.22);z-index:50;animation:fadeup .18s cubic-bezier(.2,.7,.2,1) both}
 .team-dd-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);padding:0 4px;margin-bottom:7px}
 .team-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;transition:background .1s}
 .team-opt:hover{background:#F1F6F1}
@@ -697,7 +697,7 @@ table{width:100%;border-collapse:collapse}
 /* ══ AVATAR TOOLTIP ══ */
 .tb-avatar-wrap{position:relative}
 .tb-avatar-wrap:hover .av-tooltip{opacity:1;transform:translateY(0)}
-.av-tooltip{position:absolute;top:calc(100%+8px);right:0;background:var(--ink);color:#fff;padding:6px 12px;border-radius:9px;font-size:11px;white-space:nowrap;opacity:0;transform:translateY(4px);transition:all .18s;pointer-events:none;z-index:50;font-family:var(--font-b);font-weight:600}
+.av-tooltip{position:absolute;top:calc(100% + 8px);right:0;background:var(--ink);color:#fff;padding:6px 12px;border-radius:9px;font-size:11px;white-space:nowrap;opacity:0;transform:translateY(4px);transition:all .18s;pointer-events:none;z-index:50;font-family:var(--font-b);font-weight:600}
 .av-tooltip::before{content:'';position:absolute;top:-5px;right:10px;border:5px solid transparent;border-bottom-color:var(--ink);border-top:none}
 
 /* ══ ANALYSE EMPTY STATE ══ */
