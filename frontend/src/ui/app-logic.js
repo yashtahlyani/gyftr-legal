@@ -122,8 +122,10 @@ let AGs=[
   {
     id:2, client:'Meridian Finance — API', tag:'MFA', ct:'ct-p',
     sD:'2026-03-05', type:'API / Direct', st:'review', clientStatus:'negotiating',
-    tm:{L:'tc-yellow',F:'tc-yellow',C:'tc-none',B:'tc-green'},
-    ms:{L:'Under Review',F:'Under Review',C:'Pending',B:'Approved'},
+    stage:'signing_required',
+    stage2DocLink:'https://docs.google.com/document/d/19GynpWHuPzVZqyQXCIcRkkXCl4Zaji0P/edit',
+    tm:{L:'tc-green',F:'tc-yellow',C:'tc-none',B:'tc-green'},
+    ms:{L:'Approved',F:'Under Review',C:'Pending',B:'Approved'},
     teamAging:{L:'+2d',F:'+1d',C:null,B:null},
     ag:'+2d', ac:'ag-warn', lu:'2026-06-08',
     sp:{L:'Nitin',F:'Neha',C:'Nikhil',B:'Pankaj Mehta'},
@@ -260,8 +262,10 @@ let AGs=[
   {
     id:4, client:'Summit Life Insurance', tag:'SLI', ct:'ct-b',
     sD:'2026-05-12', type:'API / Direct', st:'review', clientStatus:'responded',
-    tm:{L:'tc-green',F:'tc-yellow',C:'tc-none',B:'tc-green'},
-    ms:{L:'Approved',F:'Under Review',C:'Pending',B:'Approved'},
+    stage:'final_approval_pending',
+    stage2DocLink:'https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit',
+    tm:{L:'tc-green',F:'tc-red',C:'tc-none',B:'tc-green'},
+    ms:{L:'Approved',F:'Rejected',C:'Pending',B:'Approved'},
     teamAging:{L:null,F:'+3d',C:null,B:null},
     ag:'+3d', ac:'ag-warn', lu:'2026-06-05',
     sp:{L:'Nitin',F:'Neha',C:'Nikhil',B:'Pankaj Mehta'},
@@ -270,7 +274,7 @@ let AGs=[
     doc:'https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit',
     remarks:[
       {author:'Nitin',role:'Legal',ts:'2026-06-01 09:00',txt:'Draft shared with finance team for review.'},
-      {author:'Neha',role:'Finance',ts:'2026-06-05 14:22',txt:'Awaiting clarification on revenue share clause — is the 17% on MRP or selling price?'}
+      {author:'Neha',role:'Finance',ts:'2026-06-05 14:22',txt:'Reject with Remarks — revenue share clause (17%) still shows MRP basis, we agreed selling price basis in the last call. Please correct before we can approve.'}
     ],
     hist:[
       {d:'2026-05-12 11:30',t:'Legal',b:'Nitin',f:'—',to:'Pending'},
@@ -332,6 +336,8 @@ let AGs=[
   {
     id:5, client:'Crestview Bank', tag:'CVB', ct:'ct-t',
     sD:'2026-01-05', type:'API / Direct', st:'closed', clientStatus:'finalised',
+    stage:'signing_done',
+    stage2DocLink:'https://docs.google.com/document/d/1mtLDflMAwkKM-RGZ1pABfJEpS1GcWAqW/edit',
     tm:{L:'tc-green',F:'tc-green',C:'tc-green',B:'tc-green'},
     ms:{L:'Approved',F:'Approved',C:'Approved',B:'Approved'},
     teamAging:{L:null,F:null,C:null,B:null},
@@ -808,7 +814,12 @@ function renderStageCell(a){
   // Only the original uploader ever sees a transition action here — per
   // spec, no one else can trigger these, even Legal team members who
   // aren't the uploader. Everyone else, including Legal, sees the badge only.
-  const isUploader=myProfile&&a.createdBy&&myProfile.id===a.createdBy;
+  // Demo mode has no real profile/created_by to compare (nothing is
+  // persisted there), so it falls back to "currently viewing as Legal" —
+  // that's a demo-only affordance so the flow can be clicked through live;
+  // the real backend enforces the strict per-person check regardless of
+  // what the frontend ever shows.
+  const isUploader=myProfile?(a.createdBy&&myProfile.id===a.createdBy):(role==="legal");
   if(!isUploader)return badge;
 
   const allApproved=["L","F","C","B"].every(t=>a.ms[t]==="Approved");
@@ -833,40 +844,95 @@ async function refreshAfterStageChange(){
   return result;
 }
 
+function resetAllMyStatusLocal(a){
+  ["L","F","C","B"].forEach(t=>{a.ms[t]="Pending";a.tm[t]="tc-none";});
+}
+function pushLocalDraft(a,note,docLink){
+  if(!a.drafts)a.drafts=[];
+  a.drafts.push({n:"D-stage2-"+(a.drafts.length+1),date:td(),dir:"sent",note,docLink});
+}
+
 async function advanceStageAction(id){
   const a=AGs.find(x=>x.id===id);
-  if(!a||!a._sbId)return;
-  try{
-    if(a.stage==="review_pending"){
-      if(!confirm("Are you sure you want to move the document to final approval stage?"))return;
-      const docLink=prompt("Paste the Google Doc link for the final approval draft (this is a new, separate document from the original):");
-      if(!docLink||!docLink.trim()){showToast("A document link is required — not advanced");return;}
-      await advanceStage(a._sbId,docLink.trim());
+  if(!a)return;
+  const isDemo=!a._sbId; // demo/sample rows never persist — matches every other action in this file
+
+  if(a.stage==="review_pending"){
+    if(!confirm("Are you sure you want to move the document to final approval stage?"))return;
+    const docLink=prompt("Paste the Google Doc link for the final approval draft (this is a new, separate document from the original):");
+    if(!docLink||!docLink.trim()){showToast("A document link is required — not advanced");return;}
+
+    if(isDemo){
+      a.stage="final_approval_pending";a.stage2DocLink=docLink.trim();
+      resetAllMyStatusLocal(a);
+      pushLocalDraft(a,"Final approval draft",docLink.trim());
+      a.hist.push({d:ns(),t:"Legal",b:myName(),f:"Review Pending",to:"Final Approval Pending"});
+      updateStats();ftbl();
       showToast("Moved to Final Approval Pending","green");
-    }else if(a.stage==="final_approval_pending"){
-      if(!confirm("Are you sure you want to move the document to sign-in stage?"))return;
-      await advanceStage(a._sbId);
-      showToast("Moved to Signing Required","green");
-    }else if(a.stage==="signing_required"){
-      if(!confirm("Confirm the agreement has been signed — this closes the task."))return;
-      await advanceStage(a._sbId);
-      showToast("Agreement closed — Signing Done","green");
-    }else{
       return;
     }
-    await refreshAfterStageChange();
-  }catch(e){
-    showToast(e.message||"Couldn't advance the stage","red");
+    try{
+      await advanceStage(a._sbId,docLink.trim());
+      showToast("Moved to Final Approval Pending","green");
+      await refreshAfterStageChange();
+    }catch(e){showToast(e.message||"Couldn't advance the stage","red");}
+    return;
+  }
+
+  if(a.stage==="final_approval_pending"){
+    if(!confirm("Are you sure you want to move the document to sign-in stage?"))return;
+
+    if(isDemo){
+      a.stage="signing_required";
+      resetAllMyStatusLocal(a);
+      a.hist.push({d:ns(),t:"Legal",b:myName(),f:"Final Approval Pending",to:"Signing Required"});
+      updateStats();ftbl();
+      showToast("Moved to Signing Required","green");
+      return;
+    }
+    try{
+      await advanceStage(a._sbId);
+      showToast("Moved to Signing Required","green");
+      await refreshAfterStageChange();
+    }catch(e){showToast(e.message||"Couldn't advance the stage","red");}
+    return;
+  }
+
+  if(a.stage==="signing_required"){
+    if(!confirm("Confirm the agreement has been signed — this closes the task."))return;
+
+    if(isDemo){
+      a.stage="signing_done";
+      a.hist.push({d:ns(),t:"Legal",b:myName(),f:"Signing Required",to:"Signing Done"});
+      updateStats();ftbl();
+      showToast("Agreement closed — Signing Done","green");
+      return;
+    }
+    try{
+      await advanceStage(a._sbId);
+      showToast("Agreement closed — Signing Done","green");
+      await refreshAfterStageChange();
+    }catch(e){showToast(e.message||"Couldn't close the agreement","red");}
   }
 }
 
 async function reviseStage2DocAction(id){
   const a=AGs.find(x=>x.id===id);
-  if(!a||!a._sbId)return;
+  if(!a)return;
   const docLink=prompt("Paste the corrected Google Doc link:");
   if(!docLink||!docLink.trim())return;
   const reason=prompt("Reason for this revision (required):");
   if(!reason||!reason.trim()){showToast("A reason is required — not uploaded");return;}
+
+  if(!a._sbId){
+    a.stage2DocLink=docLink.trim();
+    resetAllMyStatusLocal(a);
+    pushLocalDraft(a,`Revised draft — ${reason.trim()}`,docLink.trim());
+    a.hist.push({d:ns(),t:"Legal",b:myName(),f:"Final Approval Pending",to:"Final Approval Pending (revised draft)"});
+    updateStats();ftbl();
+    showToast("Revised draft uploaded — all 4 teams reset to Pending","green");
+    return;
+  }
   try{
     await reviseStage2Doc(a._sbId,docLink.trim(),reason.trim());
     showToast("Revised draft uploaded — all 4 teams reset to Pending","green");
@@ -1774,7 +1840,7 @@ function renderDraftsModal(){
           <span class="dp-date-txt">${fd(d.date)}</span>
           <span class="dp-dir-tag ${isSent?"dp-dir-sent":"dp-dir-recv"}">${isSent?"↗ Sent to client":"↙ Received from client"}</span>
         </div>
-        <div class="dp-note-txt">${d.note||"No note"}</div>
+        <div class="dp-note-txt">${d.note||"No note"}${d.docLink?` · <a href="${d.docLink}" target="_blank" rel="noopener" style="color:var(--pop-deep);font-weight:600">Open doc ↗</a>`:""}</div>
       </div>
     </div>`;
   }).join("");
