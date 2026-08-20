@@ -7,12 +7,24 @@
  * Use this for accounts that are already CONFIRMED (i.e. someone already
  * completed a first login on a shared/default password before this was
  * fixed) — new accounts created via create-cognito-users.js are already
- * forced to reset on first login and don't need this.
+ * forced to reset on first login and don't strictly need this, UNLESS you
+ * also want them sharing the same known TEMP_PASSWORD (they otherwise keep
+ * their own random one) — that's what --all is for, see below.
  *
  * Usage:
  *   cd migration && npm install
  *   node force-password-reset.js --dry-run                # preview only, no changes
- *   node force-password-reset.js                           # reset every enabled user in the pool
+ *   node force-password-reset.js                           # reset every CONFIRMED user (skips accounts
+ *                                                           #   already in FORCE_CHANGE_PASSWORD — see --all)
+ *   node force-password-reset.js --all                      # also reset accounts already in
+ *                                                           #   FORCE_CHANGE_PASSWORD — needed to put
+ *                                                           #   brand-new accounts from
+ *                                                           #   create-cognito-users.js (each on their
+ *                                                           #   own random password) onto the shared
+ *                                                           #   TEMP_PASSWORD too. Safe: AdminSetUserPassword
+ *                                                           #   with Permanent:false just overwrites the
+ *                                                           #   temp password, whatever the account's
+ *                                                           #   current status.
  *   node force-password-reset.js --only=a@gyftr.net,b@gyftr.net   # reset specific accounts only
  *   node force-password-reset.js --signout                 # also invalidate any active sessions
  *
@@ -45,6 +57,7 @@ const TEMP_PASSWORD   = process.env.TEMP_PASSWORD || 'Default@123';
 const args      = process.argv.slice(2);
 const DRY_RUN   = args.includes('--dry-run');
 const SIGN_OUT  = args.includes('--signout');
+const ALL       = args.includes('--all');
 const onlyArg   = args.find(a => a.startsWith('--only='));
 const ONLY_EMAILS = onlyArg ? new Set(onlyArg.slice('--only='.length).split(',').map(e => e.trim().toLowerCase())) : null;
 
@@ -79,13 +92,15 @@ async function main() {
     const email = u.Attributes?.find(a => a.Name === 'email')?.Value?.toLowerCase();
     if (!email) return false;
     if (ONLY_EMAILS && !ONLY_EMAILS.has(email)) return false;
-    if (u.UserStatus === 'FORCE_CHANGE_PASSWORD') return false; // already forced, skip
+    if (!ALL && u.UserStatus === 'FORCE_CHANGE_PASSWORD') return false; // already forced, skip unless --all
     if (u.Enabled === false) return false; // disabled accounts left alone
     return true;
   });
 
   if (!targets.length) {
-    console.log('No accounts need resetting (everyone is already FORCE_CHANGE_PASSWORD, disabled, or excluded by --only).');
+    console.log(ALL
+      ? 'No accounts need resetting (everyone is disabled or excluded by --only).'
+      : 'No accounts need resetting (everyone is already FORCE_CHANGE_PASSWORD, disabled, or excluded by --only).\nIf that FORCE_CHANGE_PASSWORD group includes brand-new accounts from create-cognito-users.js that you want on the shared TEMP_PASSWORD too, re-run with --all.');
     return;
   }
 

@@ -118,17 +118,33 @@ a lot of time:
 | `scripts/create-cognito-users.js` | a **random** one per user (`Gy!xxxxxxT1`), printed to the terminal when the script ran |
 | `scripts/force-password-reset.js` | **`Default@123`** for everyone (override with `TEMP_PASSWORD`) |
 
-So `Default@123` only works **after** `force-password-reset.js` has been run.
-On a pool where accounts were created and never reset, it will be rejected —
-and because Cognito collapses the error, it looks identical to a wrong
-password. If the random passwords from the original run are lost, that is the
-normal situation, and the fix is to reset everyone:
+So `Default@123` only works **after** `force-password-reset.js` has been run
+**on that specific account**. On a pool where accounts were created and never
+reset, it will be rejected — and because Cognito collapses the error, it
+looks identical to a wrong password. If the random passwords from the
+original run are lost, that is the normal situation, and the fix is to reset
+everyone:
 
 ```bash
 cd scripts
 npm run force-password-reset -- --dry-run   # see who would be reset
-npm run force-password-reset                # everyone → Default@123, must change on next login
+npm run force-password-reset                # CONFIRMED accounts → Default@123, must change on next login
 ```
+
+**Brand-new accounts need `--all`.** The plain command above skips anyone
+already in `FORCE_CHANGE_PASSWORD` — which is exactly the status
+`create-cognito-users.js` puts every new account into (each with its own
+random password, not `Default@123`). Running the plain command again after
+creating new users looks like it worked ("Done. Reset: N") but silently
+excludes them, and `Default@123` will still fail for those specific people.
+Use `--all` to also catch them:
+
+```bash
+npm run force-password-reset -- --all
+```
+
+This is what actually gets a newly-created user onto the shared temp
+password — not the plain command.
 
 Either way the account lands in `FORCE_CHANGE_PASSWORD`, so the portal prompts
 for a new password on first login and no shared password survives.
